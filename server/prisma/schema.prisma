@@ -1,0 +1,164 @@
+// Prisma Schema for Habeba Romantic Gift Platform
+// Mirrors the original PHP SQLite schema with full MySQL/SQLite compatibility
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  username     String
+  passwordHash String    @map("password_hash")
+  role         String    @default("user") // "user" | "admin"
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  gifts        Gift[]
+  payments     Payment[]
+  orders       Order[]
+  reviewedPayments Payment[] @relation("ReviewedBy")
+
+  @@map("users")
+}
+
+model Gift {
+  id               Int       @id @default(autoincrement())
+  userId           Int?      @map("user_id")
+  editToken        String    @map("edit_token")
+  slug             String    @unique
+  title            String
+  senderName       String    @map("sender_name")
+  recipientName    String    @map("recipient_name")
+  welcomeMessage   String?   @map("welcome_message")
+  themeId          String    @default("midnight") @map("theme_id")
+  themeConfig      String?   @map("theme_config") // JSON
+  galleryStyle     String    @default("masonry") @map("gallery_style")
+  musicUrl         String?   @map("music_url")
+  musicVideoId     String?   @map("music_video_id")
+  musicTitle       String?   @map("music_title")
+  letterTitle      String?   @map("letter_title")
+  letterContent    String?   @map("letter_content")
+  letterSignature  String?   @map("letter_signature")
+  surpriseTitle    String?   @map("surprise_title")
+  surpriseMessage  String?   @map("surprise_message")
+  anniversaryDate  String?   @map("anniversary_date")
+  showTimeline     Boolean   @default(true) @map("show_timeline")
+  showGallery      Boolean   @default(true) @map("show_gallery")
+  showLetter       Boolean   @default(true) @map("show_letter")
+  showCounters     Boolean   @default(true) @map("show_counters")
+  showSurprise     Boolean   @default(true) @map("show_surprise")
+  status           String    @default("published") // "draft" | "published"
+  paymentStatus    String    @default("free") @map("payment_status") // "free" | "paid" | "pending"
+  isDemo           Boolean   @default(false) @map("is_demo")
+  viewsCount       Int       @default(0) @map("views_count")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  memories         Memory[]
+  timelineEntries  TimelineEntry[]
+  counters         Counter[]
+  payments         Payment[]
+  orders           Order[]
+
+  @@map("gift_websites")
+}
+
+model Memory {
+  id          Int       @id @default(autoincrement())
+  giftId      Int       @map("gift_id")
+  imageUrl    String    @map("image_url")
+  title       String?
+  caption     String?
+  memoryDate  String?   @map("memory_date")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  gift        Gift      @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@map("memories")
+}
+
+model TimelineEntry {
+  id          Int       @id @default(autoincrement())
+  giftId      Int       @map("gift_id")
+  title       String
+  description String?
+  eventDate   String?   @map("event_date")
+  imageUrl    String?   @map("image_url")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  gift        Gift      @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@map("timeline_entries")
+}
+
+model Counter {
+  id          Int       @id @default(autoincrement())
+  giftId      Int       @map("gift_id")
+  label       String
+  targetValue Int       @default(0) @map("target_value")
+  icon        String    @default("heart")
+  sortOrder   Int       @default(0) @map("sort_order")
+
+  gift        Gift      @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@map("counters")
+}
+
+model PlatformSetting {
+  settingKey   String   @id @map("setting_key")
+  settingValue String?  @map("setting_value")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+model Order {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  giftId    Int       @map("gift_id")
+  amount    Float
+  currency  String    @default("EGP")
+  status    String    @default("pending") // "pending" | "paid" | "failed"
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  gift      Gift      @relation(fields: [giftId], references: [id])
+  payments  Payment[]
+
+  @@map("orders")
+}
+
+model Payment {
+  id                   Int       @id @default(autoincrement())
+  orderId              Int?      @map("order_id")
+  giftId               Int       @map("gift_id")
+  userId               Int       @map("user_id")
+  provider             String    // "instapay" | "vodafone_cash" | "card"
+  transactionReference String?   @map("transaction_reference")
+  providerTransactionId String?  @map("provider_transaction_id")
+  amount               Float?
+  currency             String    @default("EGP")
+  status               String    @default("awaiting_review") // "awaiting_review" | "approved" | "rejected"
+  receiptPath          String?   @map("receipt_path")
+  reviewedById         Int?      @map("reviewed_by")
+  reviewedAt           DateTime? @map("reviewed_at")
+  adminNotes           String?   @map("admin_notes")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  order                Order?    @relation(fields: [orderId], references: [id])
+  gift                 Gift      @relation(fields: [giftId], references: [id])
+  user                 User      @relation(fields: [userId], references: [id])
+  reviewedBy           User?     @relation("ReviewedBy", fields: [reviewedById], references: [id])
+
+  @@map("payments")
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.db
+*.db-journal
+storage/sessions.db
+storage/uploads/*
+!storage/uploads/.gitkeep
+.system_generated/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

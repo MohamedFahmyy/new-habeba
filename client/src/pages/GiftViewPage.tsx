@@ -251,27 +251,37 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
               <div className="space-y-16 sm:space-y-24">
                 {(gift.timelineEntries && gift.timelineEntries.length > 0
                   ? gift.timelineEntries
-                  : [
-                      {
-                        id: 1,
-                        title: 'The First Spark',
-                        description: 'You are the calm in my chaos. كل الطرق الجميلة انتهت بيكي.',
-                        imageUrl: heroBgPhoto,
-                        eventDate: 'First Day',
-                        sortOrder: 0,
-                      },
-                      {
-                        id: 2,
-                        title: 'Falling In Love',
-                        description: 'Your smile feels like home. وجودك في حياتي نعمة بحمد ربنا عليها كل يوم.',
-                        imageUrl: gift.memories?.[1]?.imageUrl || heroBgPhoto,
-                        eventDate: 'Forever Begins',
-                        sortOrder: 1,
-                      },
-                    ]
+                  : (gift.memories && gift.memories.length > 0
+                      ? gift.memories.slice(0, 6).map((m, idx) => ({
+                          id: m.id || idx,
+                          title: m.title || (idx === 0 ? 'The First Spark' : (idx === 1 ? 'Falling In Love' : `Our Special Moment #${idx + 1}`)),
+                          description: m.caption || (idx === 0 ? 'You are the calm in my chaos. كل الطرق الجميلة انتهت بيكي.' : (idx === 1 ? 'Your smile feels like home. كل لحظة معاكي حياة جديدة.' : 'Every moment with you became my favorite memory.')),
+                          imageUrl: m.imageUrl,
+                          eventDate: m.memoryDate || (idx === 0 ? 'First Day' : `Chapter ${idx + 1}`),
+                          sortOrder: idx,
+                        }))
+                      : [
+                          {
+                            id: 1,
+                            title: 'The First Spark',
+                            description: 'You are the calm in my chaos. كل الطرق الجميلة انتهت بيكي.',
+                            imageUrl: heroBgPhoto,
+                            eventDate: 'First Day',
+                            sortOrder: 0,
+                          },
+                          {
+                            id: 2,
+                            title: 'Falling In Love',
+                            description: 'Your smile feels like home. وجودك في حياتي نعمة بحمد ربنا عليها كل يوم.',
+                            imageUrl: heroBgPhoto,
+                            eventDate: 'Forever Begins',
+                            sortOrder: 1,
+                          },
+                        ]
+                    )
                 ).map((entry, index) => {
                   const isEven = index % 2 === 0;
-                  const photoUrl = entry.imageUrl || gift.memories?.[index % (gift.memories?.length || 1)]?.imageUrl || heroBgPhoto;
+                  const photoUrl = entry.imageUrl || heroBgPhoto;
 
                   return (
                     <motion.div

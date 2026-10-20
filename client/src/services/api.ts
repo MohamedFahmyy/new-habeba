@@ -39,6 +39,9 @@ export const giftsApi = {
   addMemory: (giftId: number, data: { imageUrl: string; title?: string; caption?: string; memoryDate?: string; sortOrder?: number }) =>
     api.post(`/gifts/${giftId}/memories`, data),
 
+  updateMemory: (giftId: number, memId: number, data: { title?: string; caption?: string; sortOrder?: number; memoryDate?: string }) =>
+    api.patch(`/gifts/${giftId}/memories/${memId}`, data),
+
   deleteMemory: (giftId: number, memId: number) =>
     api.delete(`/gifts/${giftId}/memories/${memId}`),
 

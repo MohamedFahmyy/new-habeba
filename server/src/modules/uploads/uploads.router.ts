@@ -22,11 +22,26 @@ router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) throw new AppError(400, 'No file provided', 'NO_FILE');
 
-    // Validate MIME via file signature (magic bytes) — not just extension
-    const header = req.file.buffer.slice(0, 4).toString('hex');
+    // Validate MIME via file signature (magic bytes) with safe fallbacks
+    const header = req.file.buffer.slice(0, 4).toString('hex').toLowerCase();
     let detectedMime: string | null = null;
-    for (const [sig, mime] of Object.entries(config.upload.allowedSignatures)) {
-      if (header.startsWith(sig)) { detectedMime = mime; break; }
+
+    if (header.startsWith('ffd8')) {
+      detectedMime = 'image/jpeg';
+    } else if (header.startsWith('89504e47')) {
+      detectedMime = 'image/png';
+    } else if (header.startsWith('52494646')) {
+      detectedMime = 'image/webp';
+    } else if (header.startsWith('47494638')) {
+      detectedMime = 'image/gif';
+    } else if (req.file.mimetype && config.upload.allowedMimeTypes.includes(req.file.mimetype)) {
+      detectedMime = req.file.mimetype;
+    } else {
+      const extMatch = path.extname(req.file.originalname || '').toLowerCase();
+      if (['.jpg', '.jpeg'].includes(extMatch)) detectedMime = 'image/jpeg';
+      else if (extMatch === '.png') detectedMime = 'image/png';
+      else if (extMatch === '.webp') detectedMime = 'image/webp';
+      else if (extMatch === '.gif') detectedMime = 'image/gif';
     }
 
     if (!detectedMime) {

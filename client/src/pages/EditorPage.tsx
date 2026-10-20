@@ -54,7 +54,7 @@ export default function EditorPage() {
     try {
       const uploadRes = await uploadsApi.upload(file);
       if (uploadRes.data?.url) {
-        await giftsApi.addMemory(giftId, {
+        const memRes = await giftsApi.addMemory(giftId, {
           imageUrl: uploadRes.data.url,
           title: '',
           caption: '',
@@ -62,6 +62,12 @@ export default function EditorPage() {
         });
         qc.invalidateQueries({ queryKey: ['gift', giftId] });
         toast.success(isAr ? 'تمت إضافة الصورة إلى الذكريات!' : 'Photo added to memories!');
+        return {
+          id: memRes.data?.memory?.id,
+          imageUrl: uploadRes.data.url,
+          title: '',
+          caption: '',
+        };
       }
     } catch (err: any) {
       toast.error(isAr ? 'فشل رفع الصورة' : 'Failed to upload photo');
@@ -82,6 +88,19 @@ export default function EditorPage() {
     } catch (err: any) {
       toast.error(isAr ? 'فشل حذف الصورة' : 'Failed to delete photo');
       throw err;
+    }
+  };
+
+  // Handle direct title/caption update of memories in editor
+  const handleDirectUpdate = async (photo: UploadedPhoto, field: 'title' | 'caption', value: string) => {
+    if (!photo.id) return;
+    try {
+      const memId = typeof photo.id === 'string' ? parseInt(photo.id, 10) : photo.id;
+      if (!isNaN(memId)) {
+        await giftsApi.updateMemory(giftId, memId, { [field]: value });
+      }
+    } catch (err) {
+      console.error('Failed to update memory:', err);
     }
   };
 
@@ -235,6 +254,7 @@ export default function EditorPage() {
               onChange={() => {}}
               onDirectUpload={handleDirectUpload}
               onDirectDelete={handleDirectDelete}
+              onDirectUpdate={handleDirectUpdate}
             />
           </div>
 

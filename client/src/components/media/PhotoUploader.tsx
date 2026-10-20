@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Image as ImageIcon, Loader2, Sparkles, Check, Trash2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Loader2, Sparkles, Check, Trash2, Link as LinkIcon, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadsApi } from '../../services/api';
 
@@ -18,6 +18,7 @@ interface PhotoUploaderProps {
   onChange: (photos: UploadedPhoto[]) => void;
   onDirectUpload?: (file: File) => Promise<UploadedPhoto | void>;
   onDirectDelete?: (photo: UploadedPhoto) => Promise<void>;
+  onDirectUpdate?: (photo: UploadedPhoto, field: 'title' | 'caption', value: string) => Promise<void>;
   maxPhotos?: number;
 }
 
@@ -26,6 +27,7 @@ export default function PhotoUploader({
   onChange,
   onDirectUpload,
   onDirectDelete,
+  onDirectUpdate,
   maxPhotos = 30,
 }: PhotoUploaderProps) {
   const { t, i18n } = useTranslation();
@@ -33,11 +35,44 @@ export default function PhotoUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [directUrl, setDirectUrl] = useState('');
+
+  // Listen for Clipboard Paste (Ctrl+V) anywhere on the window when this component is mounted
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        toast(isAr ? 'تم اكتشاف صورة من الحافظة! جاري الرفع...' : 'Image detected from clipboard! Uploading...', { icon: '📋' });
+        handleFiles(imageFiles);
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [photos, isAr]);
+
+  const isValidImageFile = (f: File) => {
+    if (f.type && f.type.startsWith('image/')) return true;
+    const ext = (f.name || '').split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'heic', 'avif'].includes(ext || '');
+  };
 
   const handleFiles = async (files: FileList | File[]) => {
-    const fileArray = Array.from(files).filter(f => f.type.startsWith('image/'));
+    const fileArray = Array.from(files).filter(isValidImageFile);
     if (fileArray.length === 0) {
-      toast.error(isAr ? 'يرجى اختيار ملفات صور صالحة فقط' : 'Please select valid image files only');
+      toast.error(isAr ? 'يرجى اختيار ملفات صور صالحة (JPG, PNG, WebP)' : 'Please select valid image files only');
       return;
     }
 
@@ -52,10 +87,16 @@ export default function PhotoUploader({
 
     setUploadingCount(prev => prev + fileArray.length);
 
+    let currentList = [...photos];
+
     for (const file of fileArray) {
       try {
         if (onDirectUpload) {
-          await onDirectUpload(file);
+          const directRes = await onDirectUpload(file);
+          if (directRes && directRes.imageUrl) {
+            currentList.push(directRes);
+            onChange([...currentList]);
+          }
         } else {
           // Standard upload to server endpoint
           const res = await uploadsApi.upload(file);
@@ -66,9 +107,8 @@ export default function PhotoUploader({
               title: '',
               caption: '',
             };
-            onChange([...photos, newPhoto]);
-            // update local reference for subsequent files in this batch
-            photos.push(newPhoto);
+            currentList.push(newPhoto);
+            onChange([...currentList]);
           }
         }
       } catch (err: any) {
@@ -80,6 +120,27 @@ export default function PhotoUploader({
         setUploadingCount(prev => Math.max(0, prev - 1));
       }
     }
+  };
+
+  const handleAddDirectUrl = () => {
+    const trimmed = directUrl.trim();
+    if (!trimmed) return;
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('/')) {
+      toast.error(isAr ? 'يرجى إدخال رابط صالح يبدأ بـ http:// أو https://' : 'Please enter a valid URL starting with http:// or https://');
+      return;
+    }
+
+    const newPhoto: UploadedPhoto = {
+      id: `url_${Date.now()}`,
+      imageUrl: trimmed,
+      title: '',
+      caption: '',
+    };
+
+    onChange([...photos, newPhoto]);
+    setDirectUrl('');
+    setShowUrlInput(false);
+    toast.success(isAr ? 'تمت إضافة الصورة بنجاح!' : 'Photo added successfully!');
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -113,9 +174,18 @@ export default function PhotoUploader({
     onChange(updated);
   };
 
-  const handleUpdate = (index: number, field: 'title' | 'caption', value: string) => {
+  const handleUpdate = async (index: number, field: 'title' | 'caption', value: string) => {
+    const target = photos[index];
     const updated = photos.map((p, i) => (i === index ? { ...p, [field]: value } : p));
     onChange(updated);
+
+    if (onDirectUpdate && target) {
+      try {
+        await onDirectUpdate(target, field, value);
+      } catch (err) {
+        console.error('Failed to update photo detail:', err);
+      }
+    }
   };
 
   return (
@@ -136,7 +206,7 @@ export default function PhotoUploader({
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/*"
+          accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.heic,.avif"
           className="hidden"
           onChange={e => {
             if (e.target.files) handleFiles(e.target.files);
@@ -163,21 +233,69 @@ export default function PhotoUploader({
                 ? 'اضغط هنا لرفع الصور أو اسحبها وأفلتها'
                 : 'Click to upload photos or drag & drop here'}
             </p>
-            <p className="text-white/40 text-sm mt-1">
+            <p className="text-white/50 text-sm mt-1">
               {isAr
-                ? 'يدعم JPG, PNG, WEBP, GIF (يمكنك اختيار عدة صور معاً)'
-                : 'Supports JPG, PNG, WEBP, GIF (Multiple files supported)'}
+                ? 'يدعم JPG, PNG, WEBP, GIF (يمكنك اختيار عدة صور معاً أو اللصق بـ Ctrl+V)'
+                : 'Supports JPG, PNG, WEBP, GIF (Multiple files & Ctrl+V paste supported)'}
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/70 text-xs font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-            <span>
-              {photos.length} / {maxPhotos} {isAr ? 'صورة مرفوعة' : 'photos uploaded'}
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium">
+              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+              <span>
+                {photos.length} / {maxPhotos} {isAr ? 'صورة مرفوعة' : 'photos uploaded'}
+              </span>
             </span>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowUrlInput(prev => !prev);
+              }}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/5 hover:bg-white/15 text-white/70 hover:text-white text-xs font-medium transition-colors border border-white/10"
+            >
+              <LinkIcon className="w-3 h-3 text-pink-400" />
+              <span>{isAr ? 'أو أضف رابط صورة' : 'Or add image URL'}</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* URL Input Form (if toggled) */}
+      {showUrlInput && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className="glass-card p-4 rounded-2xl flex gap-2 flex-wrap items-center border border-pink-500/30"
+        >
+          <input
+            type="url"
+            value={directUrl}
+            onChange={e => setDirectUrl(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddDirectUrl())}
+            placeholder={isAr ? 'ألصق رابط الصورة هنا (مثال: https://...)' : 'Paste direct image URL here (https://...)'}
+            className="flex-1 min-w-[200px] px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-pink-500/50"
+          />
+          <button
+            type="button"
+            onClick={handleAddDirectUrl}
+            className="btn-primary text-xs py-2 px-4 flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{isAr ? 'إضافة' : 'Add'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowUrlInput(false)}
+            className="btn-secondary text-xs py-2 px-3 text-white/60"
+          >
+            {isAr ? 'إلغاء' : 'Cancel'}
+          </button>
+        </motion.div>
+      )}
 
       {/* Uploaded Photos Gallery Preview */}
       {photos.length > 0 && (

@@ -224,6 +224,21 @@ router.delete('/:id/memories/:memId', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.patch('/:id/memories/:memId', requireAuth, async (req, res, next) => {
+  try {
+    const giftId = toId(req.params.id);
+    const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+    if (!gift) throw new NotFoundError('Gift');
+    assertOwnership(gift, req.session.userId);
+    const data = MemorySchema.partial().parse(req.body);
+    const memory = await prisma.memory.update({
+      where: { id: toId(req.params.memId) },
+      data,
+    });
+    res.json({ success: true, memory });
+  } catch (err) { next(err); }
+});
+
 // ── Timeline CRUD ─────────────────────────────────────────────────────────────
 const TimelineSchema = z.object({
   title: z.string().min(1).max(255),

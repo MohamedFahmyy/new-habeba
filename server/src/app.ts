@@ -39,7 +39,20 @@ export function createApp() {
 
   // ── CORS ──────────────────────────────────────────────────────────────────
   app.use(cors({
-    origin: config.clientUrl,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (same-origin, mobile apps, curl)
+      if (!origin) return callback(null, true);
+      // Allow localhost, the configured clientUrl, or any hostinger domain
+      if (
+        origin === config.clientUrl ||
+        origin.includes('localhost') ||
+        origin.includes('hostingersite.com') ||
+        origin.includes('habeba')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

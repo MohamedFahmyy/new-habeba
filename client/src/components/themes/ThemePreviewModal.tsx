@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Heart, Sparkles, Calendar, Music, Mail, Image as ImageIcon } from 'lucide-react';
+import { X, Check, Heart, Sparkles, Calendar, Music, Mail, Image as ImageIcon, Eye } from 'lucide-react';
 import type { Theme } from '../../types';
 
 interface ThemePreviewModalProps {
@@ -238,13 +238,25 @@ export default function ThemePreviewModal({
           </div>
 
           {/* Footer Action Bar */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-t border-white/10 bg-black/40 backdrop-blur-md">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-white/20 text-white/70 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
-            >
-              {isAr ? 'إغلاق' : 'Close'}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-6 border-t border-white/10 bg-black/40 backdrop-blur-md">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl border border-white/20 text-white/70 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+              >
+                {isAr ? 'إغلاق' : 'Close'}
+              </button>
+
+              <a
+                href={`/gift/${theme.demoSlug || `demo-${theme.id}`}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold flex items-center gap-1.5 transition-all border border-white/15"
+              >
+                <Eye className="w-4 h-4 text-pink-400" />
+                <span>{isAr ? 'فتح الموقع التجريبي الكامل' : 'Open Full Live Demo'}</span>
+              </a>
+            </div>
 
             <button
               onClick={handleSelect}

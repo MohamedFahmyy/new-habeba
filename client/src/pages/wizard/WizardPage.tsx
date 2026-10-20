@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -311,6 +311,10 @@ export default function WizardPage() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const themeParam = searchParams.get('theme');
+  const initialTheme = themeParam && THEMES.some(t => t.id === themeParam) ? themeParam : 'midnight';
+
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
@@ -318,7 +322,7 @@ export default function WizardPage() {
   const methods = useForm<WizardFormData>({
     resolver: zodResolver(fullSchema),
     defaultValues: {
-      themeId: 'midnight', galleryStyle: 'masonry', status: 'draft',
+      themeId: initialTheme, galleryStyle: 'masonry', status: 'draft',
       showTimeline: true, showGallery: true, showLetter: true, showCounters: true, showSurprise: true,
     },
     mode: 'onChange',

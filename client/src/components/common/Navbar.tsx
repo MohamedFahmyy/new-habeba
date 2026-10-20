@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, Menu, X, Globe, Plus, LayoutDashboard, LogOut, Shield } from 'lucide-react';
+import { Heart, Menu, X, Globe, Plus, LayoutDashboard, LogOut, Shield, Sparkles } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { isRTL } from '../../lib/i18n';
 import toast from 'react-hot-toast';
@@ -41,6 +41,10 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
+            <a href="/#themes" className="btn-ghost text-sm flex items-center gap-1.5 text-white/80 hover:text-pink-300">
+              <Sparkles className="w-4 h-4 text-pink-400" />
+              <span>{i18n.language === 'ar' ? 'نماذج القوالب' : 'Themes & Demos'}</span>
+            </a>
             {isAuthenticated ? (
               <>
                 <NavLink to="/dashboard" className={({ isActive }) =>
@@ -86,6 +90,10 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-[#0d0d1a]/95 border-t border-white/10 py-4 px-4">
           <div className="flex flex-col gap-2">
+            <a href="/#themes" onClick={() => setMobileOpen(false)} className="btn-ghost flex items-center gap-2 text-pink-400">
+              <Sparkles className="w-4 h-4" />
+              <span>{i18n.language === 'ar' ? 'نماذج القوالب الحية' : 'Live Theme Demos'}</span>
+            </a>
             {isAuthenticated ? (
               <>
                 <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="btn-ghost">{t('nav_dashboard')}</Link>

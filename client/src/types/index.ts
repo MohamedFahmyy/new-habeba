@@ -67,7 +67,7 @@ export interface Gift {
   showSurprise: boolean;
   status: GiftStatus;
   paymentStatus: PaymentStatus;
-  isDemo: boolean;
+  isDemo?: boolean;
   viewsCount: number;
   createdAt: string;
   updatedAt: string;
@@ -126,6 +126,14 @@ export interface Theme {
   bgColor: string;
   previewGradient: string;
   tag: string;
+  accentGlow?: string;
+  bgGradient?: string;
+  textGradient?: string;
+  particleIcon?: string;
+  category?: 'all' | 'classic' | 'romantic' | 'luxury' | 'dreamy' | 'nature' | 'cosmic';
+  demoSlug?: string;
+  quoteAr?: string;
+  quoteEn?: string;
 }
 
 // API response types

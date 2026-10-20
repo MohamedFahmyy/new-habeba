@@ -16,7 +16,7 @@
     "db:seed": "npm run db:seed --workspace=server",
     "install:all": "npm install && npm install --workspace=client && npm install --workspace=server"
   },
-  "devDependencies": {
+  "dependencies": {
     "@types/node": "^22.7.9",
     "concurrently": "^8.2.2",
     "typescript": "^5.6.3"

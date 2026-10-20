@@ -108,40 +108,37 @@ export default function ThemePreviewModal({
 
             {/* Simulated Hero Section */}
             <div
-              className="p-8 rounded-3xl text-center relative overflow-hidden border shadow-xl"
+              className="p-8 rounded-3xl text-center relative overflow-hidden border shadow-xl bg-black/40 backdrop-blur-xl"
               style={{
-                backgroundColor: `${theme.primaryColor}0d`,
                 borderColor: `${theme.primaryColor}30`,
               }}
             >
               <div
-                className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl animate-pulse"
-                style={{
-                  background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
-                }}
+                className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center shadow-xl animate-heartbeat text-3xl"
               >
-                <Heart className="w-8 h-8 text-white fill-white" />
+                ❤️
               </div>
-              <h4 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
-                {isAr ? 'محمد & سلمى' : 'Mohamed & Salma'}
+              <h4 className="font-cursive text-4xl sm:text-5xl text-white mb-2 font-normal drop-shadow">
+                Mohamed ❤️ Salma
               </h4>
-              <p className="text-white/70 max-w-md mx-auto text-sm sm:text-base leading-relaxed">
-                {isAr
-                  ? 'كل لحظة معكِ هي حكاية حب أعيشها من جديد... وستبقى أجمل ذكرياتي ❤️'
-                  : 'Every single moment with you is a love story that will live forever ❤️'}
+              <p className="font-serif-romantic italic text-white/90 text-sm sm:text-base max-w-md mx-auto">
+                "Every moment with you became my favorite memory."
+              </p>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">
+                "كل لحظة معاكي بقت أجمل ذكرى في حياتي."
               </p>
 
               {/* Floating music badge */}
               <div
-                className="mt-5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium border"
+                className="mt-4 inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-md"
                 style={{
                   backgroundColor: `${theme.primaryColor}20`,
                   borderColor: `${theme.primaryColor}40`,
                   color: theme.primaryColor,
                 }}
               >
-                <Music className="w-3.5 h-3.5" />
-                <span>{isAr ? 'أغنيتنا المفضلة ♫' : 'Our Favorite Song ♫'}</span>
+                <span>♫</span>
+                <span>Our Song</span>
               </div>
             </div>
 
@@ -206,33 +203,37 @@ export default function ThemePreviewModal({
               </div>
             </div>
 
-            {/* Simulated Counter Bar */}
+            {/* Simulated Counter Bar (Our Numbers) */}
             <div
-              className="p-4 rounded-2xl border flex items-center justify-around text-center"
+              className="p-4 rounded-2xl border grid grid-cols-4 gap-2 text-center"
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.02)',
                 borderColor: `${theme.primaryColor}20`,
               }}
             >
               <div>
-                <p className="text-xl sm:text-2xl font-black" style={{ color: theme.primaryColor }}>
-                  365
+                <p className="font-serif-romantic font-bold text-lg sm:text-xl text-white">
+                  +70
                 </p>
-                <p className="text-white/50 text-xs">{isAr ? 'يوم حب معاً' : 'Days Together'}</p>
+                <p className="text-white/50 text-[10px] uppercase font-semibold">Days</p>
               </div>
-              <div className="w-px h-8 bg-white/10" />
               <div>
-                <p className="text-xl sm:text-2xl font-black" style={{ color: theme.secondaryColor }}>
-                  100+
+                <p className="font-serif-romantic font-bold text-lg sm:text-xl text-white">
+                  +150
                 </p>
-                <p className="text-white/50 text-xs">{isAr ? 'صورة ذكرى' : 'Photo Memories'}</p>
+                <p className="text-white/50 text-[10px] uppercase font-semibold">Photos</p>
               </div>
-              <div className="w-px h-8 bg-white/10" />
               <div>
-                <p className="text-xl sm:text-2xl font-black text-rose-400">
-                  ∞
+                <p className="font-serif-romantic font-bold text-lg sm:text-xl text-white">
+                  +50
                 </p>
-                <p className="text-white/50 text-xs">{isAr ? 'حب إلى الأبد' : 'Endless Love'}</p>
+                <p className="text-white/50 text-[10px] uppercase font-semibold">Videos</p>
+              </div>
+              <div>
+                <p className="font-serif-romantic font-bold text-lg sm:text-xl text-white">
+                  +1000
+                </p>
+                <p className="text-white/50 text-[10px] uppercase font-semibold">Memories</p>
               </div>
             </div>
           </div>

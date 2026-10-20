@@ -1,49 +1,78 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Music, Play, Pause, Sparkles, ExternalLink, ArrowRight, ArrowLeft } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Heart, Music, Play, Pause, Sparkles, ChevronDown, Camera, Video, Infinity as InfinityIcon } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { giftsApi } from '../services/api';
 import type { Gift } from '../types';
 import { getThemeById, getDemoGiftBySlug, THEMES } from '../lib/themes';
 
-function YouTubeMusicPlayer({ videoId, title, themePrimary }: { videoId: string; title?: string; themePrimary: string }) {
+function FloatingHeartsBackground({ icon = '❤️' }: { icon?: string }) {
+  // Generate random static particles once
+  const particles = useMemo(() => {
+    return Array.from({ length: 18 }).map((_, i) => ({
+      id: i,
+      left: `${(i * 5.5 + 3) % 94}%`,
+      delay: `${(i * 0.7) % 8}s`,
+      duration: `${9 + (i % 6)}s`,
+      size: `${14 + (i % 16)}px`,
+      opacity: 0.15 + ((i % 5) * 0.08),
+    }));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      {particles.map(p => (
+        <span
+          key={p.id}
+          className="absolute animate-float-up select-none"
+          style={{
+            left: p.left,
+            animationDelay: p.delay,
+            animationDuration: p.duration,
+            fontSize: p.size,
+            opacity: p.opacity,
+          }}
+        >
+          {icon}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function OurSongPillPlayer({ videoId, title, themePrimary }: { videoId: string; title?: string; themePrimary: string }) {
   const [playing, setPlaying] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   return (
-    <div className="fixed bottom-6 end-6 z-50">
-      <div className="glass-card p-4 flex items-center gap-3 shadow-2xl backdrop-blur-xl border border-white/20"
-        style={{ boxShadow: `0 10px 30px -5px ${themePrimary}33` }}>
-        <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${playing ? 'animate-spin' : ''}`}
-          style={{ background: `linear-gradient(135deg, ${themePrimary}, #ff2a70)`, animationDuration: '3s' }}
-        >
-          <Music className="w-5 h-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white/60 text-xs flex items-center gap-1 font-medium">
-            <span className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: themePrimary }} />
-            ♪ الأغنية الخاصة
-          </p>
-          <p className="text-white text-sm font-semibold truncate max-w-[150px]">{title ?? 'موسيقى رومانسية'}</p>
-        </div>
-        <button
-          onClick={() => setPlaying(!playing)}
-          className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105"
+    <div className="fixed top-5 end-5 z-50">
+      <button
+        onClick={() => setPlaying(!playing)}
+        className="px-4 py-2 rounded-full glass-card flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-white/90 hover:text-white backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 group"
+        style={{
+          boxShadow: `0 4px 20px -2px ${themePrimary}40`,
+        }}
+        title="تشغيل / إيقاف الأغنية"
+      >
+        <span className="text-base group-hover:scale-110 transition-transform">♫</span>
+        <span>Our Song</span>
+        <span
+          className={`w-2.5 h-2.5 rounded-full transition-colors ${
+            playing ? 'animate-ping' : 'opacity-60'
+          }`}
           style={{ backgroundColor: themePrimary }}
-        >
-          {playing ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white ms-0.5" />}
-        </button>
-      </div>
+        />
+      </button>
+
       {playing && (
         <iframe
           ref={iframeRef}
           src={`https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&loop=1&playlist=${videoId}`}
           className="sr-only w-0 h-0"
           allow="autoplay"
-          title="music player"
+          title="romantic background music"
         />
       )}
     </div>
@@ -56,27 +85,23 @@ function DemoBanner({ currentThemeId }: { currentThemeId: string }) {
   const currentTheme = getThemeById(currentThemeId);
 
   return (
-    <div className="sticky top-0 z-50 bg-black/85 backdrop-blur-xl border-b border-white/15 px-4 py-3 shadow-2xl">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Left: Theme Info Badge */}
-        <div className="flex items-center gap-3">
+    <div className="sticky top-0 z-50 bg-black/85 backdrop-blur-xl border-b border-white/15 px-4 py-2.5 shadow-2xl">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5">
           <span className="text-xl animate-pulse">{currentTheme.particleIcon || '💝'}</span>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 font-semibold border border-pink-500/30">
-                {isAr ? 'نموذج تجريبي حي للقالب' : 'Live Interactive Demo'}
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-400 font-semibold border border-pink-500/30">
+                {isAr ? 'نموذج تجريبي للقالب' : 'Live Demo'}
               </span>
               <span className="text-white font-bold text-sm">
                 {isAr ? currentTheme.nameAr : currentTheme.name}
               </span>
             </div>
-            <p className="text-white/50 text-xs hidden sm:block">
-              {isAr ? currentTheme.descriptionAr : currentTheme.description}
-            </p>
           </div>
         </div>
 
-        {/* Center: Quick Theme Switcher Pills */}
+        {/* Quick Theme Switcher Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 md:pb-0 scrollbar-none">
           {THEMES.map(t => {
             const isActive = t.id === currentThemeId;
@@ -97,16 +122,14 @@ function DemoBanner({ currentThemeId }: { currentThemeId: string }) {
           })}
         </div>
 
-        {/* Right: CTA to create gift with this theme */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            to={`/wizard?theme=${currentTheme.id}`}
-            className="btn-primary text-xs py-2 px-4 shadow-lg shadow-pink-500/30 flex items-center gap-1.5 whitespace-nowrap font-bold"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{isAr ? 'اصنع هديتك بهذا القالب' : 'Use This Theme'}</span>
-          </Link>
-        </div>
+        {/* CTA to use theme */}
+        <Link
+          to={`/wizard?theme=${currentTheme.id}`}
+          className="btn-primary text-xs py-1.5 px-3.5 shadow-lg shadow-pink-500/30 flex items-center gap-1.5 whitespace-nowrap font-bold"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>{isAr ? 'اصنع هديتك بهذا القالب' : 'Use This Theme'}</span>
+        </Link>
       </div>
     </div>
   );
@@ -114,9 +137,9 @@ function DemoBanner({ currentThemeId }: { currentThemeId: string }) {
 
 function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean }) {
   const theme = getThemeById(gift.themeId);
-  const [letterOpen, setLetterOpen] = useState(false);
+  const backgroundStyle = theme.bgGradient || `radial-gradient(ellipse at top, ${theme.bgColor} 0%, #06040d 100%)`;
 
-  const backgroundStyle = theme.bgGradient || `radial-gradient(ellipse at top, ${theme.bgColor} 0%, #080612 100%)`;
+  const heroBgPhoto = gift.memories?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1600&auto=format&fit=crop&q=80';
 
   return (
     <div
@@ -126,204 +149,237 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
       {/* Demo Sticky Bar */}
       {isDemo && <DemoBanner currentThemeId={theme.id} />}
 
-      {/* YouTube Background Music Player */}
+      {/* Floating Translucent Hearts */}
+      <FloatingHeartsBackground icon={theme.particleIcon || '❤️'} />
+
+      {/* Top-Right "Our Song" Player Button (exact match with reference site) */}
       {gift.musicVideoId && (
-        <YouTubeMusicPlayer videoId={gift.musicVideoId} title={gift.musicTitle} themePrimary={theme.primaryColor} />
+        <OurSongPillPlayer videoId={gift.musicVideoId} title={gift.musicTitle} themePrimary={theme.primaryColor} />
       )}
 
-      {/* Ambient Glow Orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div
-          className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-[140px] opacity-35 animate-pulse"
-          style={{ background: theme.primaryColor, animationDuration: '6s' }}
-        />
-        <div
-          className="absolute top-1/2 -right-32 w-96 h-96 rounded-full blur-[150px] opacity-25"
-          style={{ background: theme.secondaryColor }}
-        />
-        <div
-          className="absolute -bottom-32 left-1/3 w-[30rem] h-[30rem] rounded-full blur-[160px] opacity-20"
-          style={{ background: theme.accentGlow || theme.primaryColor }}
-        />
-      </div>
-
-      {/* ─── Hero / Welcome Section ────────────────────────────────────────── */}
-      <section className="min-h-[92vh] flex items-center justify-center relative px-4 py-20 z-10">
-        <div className="text-center max-w-3xl mx-auto space-y-6">
-          {/* Heart / Particle Badge */}
-          <motion.div
-            initial={{ scale: 0, rotate: -20 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: 'spring', damping: 12, delay: 0.2 }}
-            className="inline-flex items-center justify-center w-24 h-24 rounded-3xl p-1 shadow-2xl relative group"
+      {/* ─── HERO SECTION ─────────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 text-center overflow-hidden z-10">
+        {/* Background photo with cinematic vignette overlay */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src={heroBgPhoto}
+            alt="Hero romantic background"
+            className="w-full h-full object-cover opacity-35 filter blur-[1px] scale-105 transform"
+          />
+          {/* Dark romantic vignette gradient */}
+          <div
+            className="absolute inset-0"
             style={{
-              background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
-              boxShadow: `0 0 50px -10px ${theme.accentGlow || theme.primaryColor}`,
+              background: `radial-gradient(ellipse at center, rgba(10, 6, 20, 0.55) 0%, rgba(5, 3, 10, 0.94) 85%, #000000 100%)`,
             }}
+          />
+        </div>
+
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-4xl mx-auto space-y-6 sm:space-y-8 my-auto">
+          {/* Main Couple Names in Calligraphy Script */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+            className="py-4"
           >
-            <div className="w-full h-full rounded-[22px] bg-black/40 backdrop-blur-md flex items-center justify-center text-4xl animate-heartbeat">
-              {theme.particleIcon || '❤️'}
-            </div>
+            <h1 className="font-cursive text-6xl sm:text-7xl md:text-8xl lg:text-9xl text-white font-normal drop-shadow-[0_4px_30px_rgba(255,255,255,0.4)] flex items-center justify-center gap-3 sm:gap-6 flex-wrap leading-tight">
+              <span>{gift.senderName}</span>
+              <span className="inline-block animate-heartbeat text-5xl sm:text-6xl md:text-7xl text-red-500 drop-shadow-[0_0_30px_rgba(255,42,112,0.9)]">
+                ❤️
+              </span>
+              <span>{gift.recipientName}</span>
+            </h1>
           </motion.div>
 
-          {/* Couple Names */}
+          {/* Bilingual Poetic Quotes (matching reference site) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="flex items-center justify-center gap-3 text-lg md:text-xl font-light tracking-wide text-white/80"
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="space-y-3 max-w-2xl mx-auto px-4"
           >
-            <span className="font-semibold text-white px-3 py-1 rounded-full bg-white/5 border border-white/10">
-              {gift.senderName}
-            </span>
-            <Heart className="w-5 h-5 text-pink-400 fill-pink-400 animate-pulse" />
-            <span className="font-semibold text-white px-3 py-1 rounded-full bg-white/5 border border-white/10">
-              {gift.recipientName}
-            </span>
+            <p className="font-serif-romantic italic text-lg sm:text-2xl text-white/90 tracking-wide font-normal drop-shadow">
+              "{theme.quoteEn || 'Every moment with you became my favorite memory.'}"
+            </p>
+            <p className="text-base sm:text-xl text-white/80 font-light leading-relaxed">
+              "{theme.quoteAr || 'كل لحظة معاكي بقت أجمل ذكرى في حياتي.'}"
+            </p>
           </motion.div>
 
-          {/* Site Title */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.2] px-2"
+          {/* Start Our Story Down Arrow */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="pt-8"
           >
-            <span
-              className="bg-clip-text text-transparent bg-gradient-to-r drop-shadow-sm"
-              style={{
-                backgroundImage: `linear-gradient(135deg, #ffffff 20%, ${theme.primaryColor} 70%, ${theme.secondaryColor} 100%)`,
-              }}
+            <a
+              href="#journey"
+              className="inline-flex flex-col items-center gap-2 text-white/60 hover:text-white transition-colors group"
             >
-              {gift.title}
-            </span>
-          </motion.h1>
-
-          {/* Poetic Theme Quote */}
-          {theme.quoteAr && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="text-sm md:text-base italic text-white/50 max-w-xl mx-auto"
-            >
-              "{theme.quoteAr}"
-            </motion.p>
-          )}
-
-          {/* Welcome Message */}
-          {gift.welcomeMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
-              className="p-6 rounded-3xl glass-card max-w-2xl mx-auto border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-xl"
-            >
-              <p className="text-base sm:text-lg text-white/90 leading-relaxed font-normal">
-                {gift.welcomeMessage}
-              </p>
-            </motion.div>
-          )}
+              <span className="text-xs uppercase tracking-widest font-medium">Start Our Story</span>
+              <ChevronDown className="w-6 h-6 animate-bounce text-pink-400 group-hover:scale-125 transition-transform" />
+            </a>
+          </motion.div>
         </div>
       </section>
 
-      {/* ─── Timeline / Our Story ─────────────────────────────────────────── */}
-      {gift.showTimeline && gift.timelineEntries && gift.timelineEntries.length > 0 && (
-        <section className="py-24 px-4 relative z-10">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="text-xs uppercase tracking-widest text-pink-400 font-bold px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20">
-                حكايتنا معاً
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mt-3">محطات من رحلة قلوبنا ❤️</h2>
+      {/* ─── OUR JOURNEY (TIMELINE) ───────────────────────────────────────── */}
+      {gift.showTimeline && (
+        <section id="journey" className="py-28 px-4 relative z-10">
+          <div className="max-w-5xl mx-auto">
+            {/* Section Header */}
+            <div className="text-center mb-20">
+              <h2 className="font-cursive text-5xl sm:text-6xl md:text-7xl text-white drop-shadow-[0_4px_25px_rgba(255,255,255,0.3)]">
+                Our Journey
+              </h2>
             </div>
 
+            {/* Glowing Laser Timeline */}
             <div className="relative">
-              {/* Vertical Glowing Line */}
+              {/* Center Vertical Laser Line */}
               <div
-                className="absolute start-6 sm:start-8 top-0 bottom-0 w-0.5 opacity-40"
-                style={{ background: `linear-gradient(to bottom, ${theme.primaryColor}, ${theme.secondaryColor}, transparent)` }}
+                className="absolute start-1/2 -translate-x-1/2 top-0 bottom-0 w-0.5 shadow-lg"
+                style={{
+                  background: `linear-gradient(to bottom, transparent, ${theme.primaryColor}, ${theme.secondaryColor}, transparent)`,
+                  boxShadow: `0 0 15px ${theme.primaryColor}`,
+                }}
               />
 
-              <div className="space-y-10">
-                {gift.timelineEntries.map((entry, i) => (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, x: -30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.15 }}
-                    className="relative flex items-start gap-4 sm:gap-6 group"
-                  >
-                    {/* Circle Node */}
-                    <div
-                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl border-2 flex items-center justify-center shrink-0 z-10 shadow-lg group-hover:scale-110 transition-transform bg-[#0d0618]"
-                      style={{ borderColor: theme.primaryColor, boxShadow: `0 0 20px -5px ${theme.primaryColor}55` }}
-                    >
-                      <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.primaryColor }} />
-                    </div>
+              <div className="space-y-16 sm:space-y-24">
+                {(gift.timelineEntries && gift.timelineEntries.length > 0
+                  ? gift.timelineEntries
+                  : [
+                      {
+                        id: 1,
+                        title: 'The First Spark',
+                        description: 'You are the calm in my chaos. كل الطرق الجميلة انتهت بيكي.',
+                        imageUrl: heroBgPhoto,
+                        eventDate: 'First Day',
+                        sortOrder: 0,
+                      },
+                      {
+                        id: 2,
+                        title: 'Falling In Love',
+                        description: 'Your smile feels like home. وجودك في حياتي نعمة بحمد ربنا عليها كل يوم.',
+                        imageUrl: gift.memories?.[1]?.imageUrl || heroBgPhoto,
+                        eventDate: 'Forever Begins',
+                        sortOrder: 1,
+                      },
+                    ]
+                ).map((entry, index) => {
+                  const isEven = index % 2 === 0;
+                  const photoUrl = entry.imageUrl || gift.memories?.[index % (gift.memories?.length || 1)]?.imageUrl || heroBgPhoto;
 
-                    {/* Content Card */}
-                    <div className="flex-1 glass-card p-6 sm:p-7 rounded-3xl border border-white/10 group-hover:border-white/25 transition-all">
-                      <span
-                        className="text-xs font-bold uppercase tracking-wider block mb-1"
-                        style={{ color: theme.primaryColor }}
+                  return (
+                    <motion.div
+                      key={entry.id || index}
+                      initial={{ opacity: 0, y: 40 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-50px' }}
+                      transition={{ duration: 0.7 }}
+                      className={`relative flex flex-col md:flex-row items-center gap-8 ${
+                        isEven ? 'md:flex-row' : 'md:flex-row-reverse'
+                      }`}
+                    >
+                      {/* Content Card (Zigzag) */}
+                      <div className="w-full md:w-[46%]">
+                        <div
+                          className="glass-card p-4 sm:p-5 rounded-3xl border shadow-2xl backdrop-blur-xl group hover:scale-[1.02] transition-all duration-300"
+                          style={{
+                            borderColor: `${theme.primaryColor}35`,
+                            boxShadow: `0 10px 40px -10px ${theme.primaryColor}25`,
+                          }}
+                        >
+                          {/* Photo */}
+                          <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-black/40 mb-4 border border-white/10">
+                            <img
+                              src={photoUrl}
+                              alt={entry.title || 'Timeline photo'}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                          </div>
+
+                          {/* Text Quotes */}
+                          <div className="text-center space-y-1.5 px-2">
+                            {entry.description && (
+                              <p className="font-serif-romantic italic text-base sm:text-lg text-white/90">
+                                "{entry.description}"
+                              </p>
+                            )}
+                            {entry.title && (
+                              <p className="text-white/60 text-xs sm:text-sm font-light">
+                                {entry.title}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Timeline Center Glowing Orb Node */}
+                      <div
+                        className="hidden md:flex absolute start-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white items-center justify-center z-10 shadow-lg"
+                        style={{
+                          backgroundColor: theme.primaryColor,
+                          boxShadow: `0 0 15px ${theme.primaryColor}`,
+                        }}
                       >
-                        {entry.eventDate}
-                      </span>
-                      <h3 className="text-white font-bold text-lg sm:text-xl mb-2">{entry.title}</h3>
-                      {entry.description && (
-                        <p className="text-white/70 leading-relaxed text-sm sm:text-base font-light">
-                          {entry.description}
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                        <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+                      </div>
+
+                      {/* Spacer for other side */}
+                      <div className="hidden md:block md:w-[46%]" />
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* ─── Gallery / Memories ───────────────────────────────────────────── */}
+      {/* ─── BEAUTIFUL MOMENTS (GALLERY) ──────────────────────────────────── */}
       {gift.showGallery && gift.memories && gift.memories.length > 0 && (
-        <section className="py-24 px-4 relative z-10 bg-black/20">
+        <section className="py-28 px-4 relative z-10 bg-black/25">
           <div className="max-w-6xl mx-auto">
+            {/* Header */}
             <div className="text-center mb-16">
-              <span className="text-xs uppercase tracking-widest text-pink-400 font-bold px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20">
-                ألبوم الذكريات
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mt-3">لحظات لا ينساها القلب 📸</h2>
+              <h2 className="font-cursive text-5xl sm:text-6xl md:text-7xl text-white drop-shadow-[0_4px_25px_rgba(255,255,255,0.3)]">
+                Beautiful Moments
+              </h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {/* Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
               {gift.memories.map((mem, i) => (
                 <motion.div
-                  key={mem.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  key={mem.id || i}
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group relative rounded-3xl overflow-hidden glass-card border border-white/10 hover:border-pink-500/40 transition-all duration-500 shadow-xl"
-                  style={{ aspectRatio: '4/5' }}
+                  transition={{ delay: (i % 3) * 0.1, duration: 0.6 }}
+                  className="group relative rounded-3xl overflow-hidden glass-card border border-white/10 hover:border-pink-500/50 transition-all duration-500 shadow-2xl"
+                  style={{
+                    aspectRatio: '4/4.8',
+                    boxShadow: `0 10px 30px -10px ${theme.primaryColor}20`,
+                  }}
                 >
                   <img
                     src={mem.imageUrl}
-                    alt={mem.title ?? 'ذكرى جميلة'}
+                    alt={mem.title ?? 'Beautiful moment'}
                     className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700"
                     loading="lazy"
                   />
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent opacity-85 group-hover:opacity-95 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-75 group-hover:opacity-90 transition-opacity" />
 
-                  {/* Caption & Title */}
-                  <div className="absolute bottom-0 inset-x-0 p-6 space-y-1">
+                  <div className="absolute bottom-0 inset-x-0 p-5 space-y-1">
                     {mem.title && (
-                      <h4 className="text-white font-bold text-lg drop-shadow">{mem.title}</h4>
+                      <h4 className="text-white font-bold text-base sm:text-lg drop-shadow">{mem.title}</h4>
                     )}
                     {mem.caption && (
-                      <p className="text-white/70 text-xs sm:text-sm line-clamp-2 leading-relaxed font-light">
+                      <p className="text-white/70 text-xs sm:text-sm line-clamp-2 font-light">
                         {mem.caption}
                       </p>
                     )}
@@ -335,124 +391,145 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
         </section>
       )}
 
-      {/* ─── Love Letter ─────────────────────────────────────────────────── */}
-      {gift.showLetter && gift.letterContent && (
-        <section className="py-24 px-4 relative z-10">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-12">
-              <span className="text-xs uppercase tracking-widest text-pink-400 font-bold px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20">
-                من أعماق القلب
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mt-3">
-                {gift.letterTitle ?? 'رسالة حب خاصة 💌'}
+      {/* ─── A LETTER TO YOU ──────────────────────────────────────────────── */}
+      {gift.showLetter && (
+        <section className="py-28 px-4 relative z-10">
+          <div className="max-w-3xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-16">
+              <h2 className="font-cursive text-5xl sm:text-6xl md:text-7xl text-white drop-shadow-[0_4px_25px_rgba(255,255,255,0.3)]">
+                A Letter To You
               </h2>
             </div>
 
-            <div className="relative">
-              <AnimatePresence mode="wait">
-                {!letterOpen ? (
-                  <motion.div
-                    key="envelope"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    onClick={() => setLetterOpen(true)}
-                    className="cursor-pointer glass-card p-12 sm:p-16 rounded-3xl text-center border-2 border-dashed border-white/20 hover:border-pink-500/50 hover:bg-white/[0.06] transition-all group shadow-2xl"
-                  >
-                    <div className="text-6xl sm:text-7xl mb-4 group-hover:scale-110 transition-transform animate-heartbeat">
-                      💌
-                    </div>
-                    <p className="text-white font-bold text-lg sm:text-xl">اضغط هنا لفتح رسالة الحب الخاصة</p>
-                    <p className="text-white/40 text-xs sm:text-sm mt-1">كتبت هذه الكلمات بحب خصيصاً لأجلكِ</p>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="letter"
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass-card p-8 sm:p-12 rounded-3xl border border-white/20 shadow-2xl bg-black/40 backdrop-blur-2xl relative"
-                  >
-                    <div className="text-3xl text-center mb-6">💌</div>
-                    <div className="text-white/90 leading-relaxed whitespace-pre-wrap text-base sm:text-lg font-light leading-[2]">
-                      {gift.letterContent}
-                    </div>
-                    {gift.letterSignature && (
-                      <p
-                        className="text-end mt-8 text-xl font-bold"
-                        style={{ color: theme.primaryColor }}
-                      >
-                        — {gift.letterSignature}
-                      </p>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Letter Glass Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="glass-card p-8 sm:p-14 rounded-3xl border backdrop-blur-2xl relative shadow-2xl text-center space-y-6"
+              style={{
+                borderColor: `${theme.primaryColor}30`,
+                boxShadow: `0 15px 50px -10px ${theme.primaryColor}30`,
+              }}
+            >
+              {/* Romantic English Cursive Quote */}
+              <p className="font-cursive text-2xl sm:text-3xl text-pink-300">
+                "I never knew love could feel this peaceful until I met you."
+              </p>
+
+              {/* Arabic Poetic Letter Body */}
+              <div className="text-white/95 leading-[2.2] text-lg sm:text-xl font-light whitespace-pre-wrap max-w-xl mx-auto py-2">
+                {gift.letterContent || `${gift.recipientName}،\n\nإنتِ أجمل حاجة حصلتلي في حياتي.\nضحكتك أمان ووجودك راحة لقلبي.\nبحبك بطريقة أكبر من أي كلام.`}
+              </div>
+
+              {/* Signature */}
+              <div className="pt-4">
+                <p
+                  className="font-cursive text-3xl sm:text-4xl"
+                  style={{ color: theme.primaryColor }}
+                >
+                  — {gift.letterSignature || gift.senderName}
+                </p>
+              </div>
+            </motion.div>
           </div>
         </section>
       )}
 
-      {/* ─── Counters / By The Numbers ────────────────────────────────────── */}
-      {gift.showCounters && gift.counters && gift.counters.length > 0 && (
-        <section className="py-20 px-4 relative z-10 bg-black/15">
+      {/* ─── OUR NUMBERS (COUNTERS) ───────────────────────────────────────── */}
+      {gift.showCounters && (
+        <section className="py-24 px-4 relative z-10 bg-black/20">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-14">
-              <span className="text-xs uppercase tracking-widest text-pink-400 font-bold px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20">
-                أرقام لها معنى
-              </span>
-              <h2 className="text-3xl font-bold text-white mt-3">حكايتنا بلغة الأرقام 🔢</h2>
+            {/* Header */}
+            <div className="text-center mb-16">
+              <h2 className="font-cursive text-5xl sm:text-6xl md:text-7xl text-white drop-shadow-[0_4px_25px_rgba(255,255,255,0.3)]">
+                Our Numbers
+              </h2>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              {gift.counters.map(counter => (
-                <div
-                  key={counter.id}
-                  className="glass-card p-6 rounded-3xl text-center border border-white/10 hover:border-white/25 transition-all shadow-lg"
-                >
-                  <div
-                    className="text-3xl sm:text-4xl font-extrabold mb-1"
-                    style={{ color: theme.primaryColor }}
+              {(gift.counters && gift.counters.length > 0
+                ? gift.counters
+                : [
+                    { id: 1, label: 'DAYS TOGETHER', targetValue: 70, icon: 'heart', sortOrder: 0 },
+                    { id: 2, label: 'PHOTOS', targetValue: 150, icon: 'camera', sortOrder: 1 },
+                    { id: 3, label: 'VIDEOS', targetValue: 50, icon: 'video', sortOrder: 2 },
+                    { id: 4, label: 'MEMORIES', targetValue: 1000, icon: 'infinity', sortOrder: 3 },
+                  ]
+              ).map((counter, i) => {
+                const getIcon = () => {
+                  if (i === 0) return <Heart className="w-7 h-7 text-red-500 fill-red-500 animate-pulse mx-auto mb-3" />;
+                  if (i === 1) return <Camera className="w-7 h-7 text-pink-400 mx-auto mb-3" />;
+                  if (i === 2) return <Video className="w-7 h-7 text-rose-400 mx-auto mb-3" />;
+                  return <InfinityIcon className="w-7 h-7 text-purple-400 mx-auto mb-3" />;
+                };
+
+                return (
+                  <motion.div
+                    key={counter.id || i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="glass-card p-6 sm:p-8 rounded-3xl text-center border shadow-xl hover:scale-105 transition-all duration-300"
+                    style={{
+                      borderColor: `${theme.primaryColor}25`,
+                    }}
                   >
-                    {counter.targetValue.toLocaleString()}
-                  </div>
-                  <div className="text-white/70 text-xs sm:text-sm font-medium">{counter.label}</div>
-                </div>
-              ))}
+                    {getIcon()}
+                    <div className="font-serif-romantic font-bold text-3xl sm:text-4xl text-white mb-1.5">
+                      +{counter.targetValue.toLocaleString()}
+                    </div>
+                    <div className="text-white/60 text-[11px] sm:text-xs font-semibold tracking-widest uppercase">
+                      {counter.label}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         </section>
       )}
 
-      {/* ─── Surprise / Final Promise ─────────────────────────────────────── */}
-      {gift.showSurprise && gift.surpriseTitle && (
-        <section className="py-24 px-4 relative z-10">
-          <div className="max-w-2xl mx-auto text-center space-y-6">
-            <div className="text-6xl sm:text-7xl animate-heartbeat inline-block">💝</div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
-              {gift.surpriseTitle}
-            </h2>
-            {gift.surpriseMessage && (
-              <p className="text-lg sm:text-xl text-white/80 leading-relaxed font-light">
-                {gift.surpriseMessage}
-              </p>
-            )}
+      {/* ─── FOREVER STARTS WITH YOU (FINAL PROMISE) ──────────────────────── */}
+      <section className="py-32 px-4 relative z-10 text-center">
+        <div className="max-w-3xl mx-auto space-y-6">
+          {/* Pulsing Red Heart */}
+          <motion.div
+            initial={{ scale: 0 }}
+            whileInView={{ scale: 1 }}
+            viewport={{ once: true }}
+            className="w-24 h-24 mx-auto flex items-center justify-center text-7xl sm:text-8xl animate-heartbeat drop-shadow-[0_0_35px_rgba(255,42,112,0.9)]"
+          >
+            ❤️
+          </motion.div>
 
-            {isDemo && (
-              <div className="pt-8">
-                <Link
-                  to={`/wizard?theme=${theme.id}`}
-                  className="btn-primary text-base px-8 py-4 shadow-2xl shadow-pink-500/40 inline-flex items-center gap-2 font-bold"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  <span>اصنع موقعاً مثل هذا لشريك حياتك الآن</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+          {/* Calligraphy Title */}
+          <h2 className="font-cursive text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white leading-tight drop-shadow-[0_4px_30px_rgba(255,255,255,0.4)]">
+            Forever Starts With You ❤️
+          </h2>
 
-      {/* ─── Footer ───────────────────────────────────────────────────────── */}
+          {/* Arabic Subtitle */}
+          <p className="text-xl sm:text-2xl md:text-3xl text-white/80 font-light">
+            إلى الأبد يبدأ بوجودك ❤️
+          </p>
+
+          {isDemo && (
+            <div className="pt-10">
+              <Link
+                to={`/wizard?theme=${theme.id}`}
+                className="btn-primary text-base sm:text-lg px-8 py-4 sm:px-10 sm:py-5 shadow-2xl shadow-pink-500/40 font-bold inline-flex items-center gap-2.5"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>اصنع موقعاً مثل هذا لشريك حياتك الآن</span>
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── FOOTER ───────────────────────────────────────────────────────── */}
       <footer className="py-12 text-center text-white/30 text-xs sm:text-sm border-t border-white/5 relative z-10">
         <p className="flex items-center justify-center gap-1.5">
           <span>صُنع بكل</span>

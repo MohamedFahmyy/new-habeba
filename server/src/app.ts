@@ -34,7 +34,8 @@ export function createApp() {
 
   // ── Security headers ──────────────────────────────────────────────────────
   app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow serving uploaded files
+    contentSecurityPolicy: false, // Prevents Chrome from upgrading http:// IP to https://
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   }));
 
   // ── CORS ──────────────────────────────────────────────────────────────────
@@ -47,7 +48,8 @@ export function createApp() {
         origin === config.clientUrl ||
         origin.includes('localhost') ||
         origin.includes('hostingersite.com') ||
-        origin.includes('habeba')
+        origin.includes('habeba') ||
+        origin.includes('186.241.19.187')
       ) {
         return callback(null, true);
       }
@@ -68,6 +70,14 @@ export function createApp() {
   }));
 
   // ── Session ───────────────────────────────────────────────────────────────
+  app.set('trust proxy', 1);
+
+  if (sessionStore && typeof (sessionStore as any).on === 'function') {
+    (sessionStore as any).on('error', (err: any) => {
+      logger.warn('Session store warning:', { error: err?.message || String(err) });
+    });
+  }
+
   app.use(session({
     name: config.session.name,
     secret: config.session.secret,
@@ -76,8 +86,8 @@ export function createApp() {
     store: sessionStore,
     cookie: {
       httpOnly: true,
-      secure: config.isProduction,
-      sameSite: config.isProduction ? 'strict' : 'lax',
+      secure: 'auto', // only require HTTPS when request is actually HTTPS
+      sameSite: 'lax',
       maxAge: config.session.maxAgeMs,
     },
   }));

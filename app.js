@@ -12,21 +12,17 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// 2. Normalize DATABASE_URL to absolute path so Prisma and SQLite never fail
-const dbFile = path.resolve(storageDir, 'habeba.db');
-process.env.DATABASE_URL = `file:${dbFile}`;
-
-// 3. Automatically apply Prisma migrations on boot if needed
+// 2. Automatically sync MySQL database schema on boot
 try {
-  console.log('[Hostinger Boot] Running database migrations...');
-  execSync('npx prisma migrate deploy --schema=./server/prisma/schema.prisma', {
+  console.log('[Hostinger Boot] Synchronizing MySQL database schema...');
+  execSync('npx prisma db push --schema=./server/prisma/schema.prisma --accept-data-loss', {
     stdio: 'inherit',
     env: process.env,
-    timeout: 15000,
+    timeout: 30000,
   });
-  console.log('[Hostinger Boot] Database migrations applied successfully.');
+  console.log('[Hostinger Boot] Database schema synchronized successfully.');
 } catch (err) {
-  console.error('[Hostinger Boot] Migration note:', err.message);
+  console.error('[Hostinger Boot] Schema sync note:', err.message);
 }
 
 // 4. Start the compiled Express production server

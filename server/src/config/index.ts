@@ -25,8 +25,8 @@ export const config = {
   },
 
   database: {
-    url: optional('DATABASE_URL', 'file:../storage/habeba.db'),
-    provider: optional('DB_PROVIDER', 'sqlite'),
+    url: optional('DATABASE_URL', 'mysql://root:@localhost:3306/habeba'),
+    provider: optional('DB_PROVIDER', 'mysql'),
   },
 
   upload: {

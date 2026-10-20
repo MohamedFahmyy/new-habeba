@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -34,18 +34,18 @@ model Gift {
   title            String
   senderName       String    @map("sender_name")
   recipientName    String    @map("recipient_name")
-  welcomeMessage   String?   @map("welcome_message")
+  welcomeMessage   String?   @db.Text @map("welcome_message")
   themeId          String    @default("midnight") @map("theme_id")
-  themeConfig      String?   @map("theme_config") // JSON
+  themeConfig      String?   @db.Text @map("theme_config") // JSON
   galleryStyle     String    @default("masonry") @map("gallery_style")
-  musicUrl         String?   @map("music_url")
+  musicUrl         String?   @db.Text @map("music_url")
   musicVideoId     String?   @map("music_video_id")
   musicTitle       String?   @map("music_title")
-  letterTitle      String?   @map("letter_title")
-  letterContent    String?   @map("letter_content")
+  letterTitle      String?   @db.Text @map("letter_title")
+  letterContent    String?   @db.Text @map("letter_content")
   letterSignature  String?   @map("letter_signature")
-  surpriseTitle    String?   @map("surprise_title")
-  surpriseMessage  String?   @map("surprise_message")
+  surpriseTitle    String?   @db.Text @map("surprise_title")
+  surpriseMessage  String?   @db.Text @map("surprise_message")
   anniversaryDate  String?   @map("anniversary_date")
   showTimeline     Boolean   @default(true) @map("show_timeline")
   showGallery      Boolean   @default(true) @map("show_gallery")
@@ -72,9 +72,9 @@ model Gift {
 model Memory {
   id          Int       @id @default(autoincrement())
   giftId      Int       @map("gift_id")
-  imageUrl    String    @map("image_url")
+  imageUrl    String    @db.Text @map("image_url")
   title       String?
-  caption     String?
+  caption     String?   @db.Text
   memoryDate  String?   @map("memory_date")
   sortOrder   Int       @default(0) @map("sort_order")
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -88,9 +88,9 @@ model TimelineEntry {
   id          Int       @id @default(autoincrement())
   giftId      Int       @map("gift_id")
   title       String
-  description String?
+  description String?   @db.Text
   eventDate   String?   @map("event_date")
-  imageUrl    String?   @map("image_url")
+  imageUrl    String?   @db.Text @map("image_url")
   sortOrder   Int       @default(0) @map("sort_order")
   createdAt   DateTime  @default(now()) @map("created_at")
 
@@ -114,7 +114,7 @@ model Counter {
 
 model PlatformSetting {
   settingKey   String   @id @map("setting_key")
-  settingValue String?  @map("setting_value")
+  settingValue String?  @db.Text @map("setting_value")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("platform_settings")
@@ -148,10 +148,10 @@ model Payment {
   amount               Float?
   currency             String    @default("EGP")
   status               String    @default("awaiting_review") // "awaiting_review" | "approved" | "rejected"
-  receiptPath          String?   @map("receipt_path")
+  receiptPath          String?   @db.Text @map("receipt_path")
   reviewedById         Int?      @map("reviewed_by")
   reviewedAt           DateTime? @map("reviewed_at")
-  adminNotes           String?   @map("admin_notes")
+  adminNotes           String?   @db.Text @map("admin_notes")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

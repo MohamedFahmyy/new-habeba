@@ -76,12 +76,25 @@ export default function LandingPage() {
             variants={fadeUp} initial="hidden" animate="visible" custom={1}
             className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.25] mb-6"
           >
-            {t('hero_title_1')}{' '}
-            <span className="text-gradient drop-shadow-[0_0_35px_rgba(255,107,157,0.4)]">
-              {t('hero_title_highlight')}
-            </span>
-            <br />
-            {t('hero_title_2')}
+            {isAr ? (
+              <>
+                مش مجرد هدية...{' '}
+                <span className="text-gradient drop-shadow-[0_0_35px_rgba(255,107,157,0.4)]">
+                  دي حكايتكم
+                </span>
+                <br />
+                اللي هتفضل عايشة للأبد ❤️
+              </>
+            ) : (
+              <>
+                Not just a gift...{' '}
+                <span className="text-gradient drop-shadow-[0_0_35px_rgba(255,107,157,0.4)]">
+                  It's your love story
+                </span>
+                <br />
+                that lives forever ❤️
+              </>
+            )}
           </motion.h1>
 
           {/* Subtitle */}

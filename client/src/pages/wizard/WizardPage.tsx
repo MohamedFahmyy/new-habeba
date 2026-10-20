@@ -359,8 +359,16 @@ export default function WizardPage() {
         }
       }
 
-      toast.success(data.status === 'published' ? (isAr ? 'تم نشر الهدية بنجاح! 🎉' : 'Gift published! 🎉') : (isAr ? 'تم حفظ المسودة!' : 'Draft saved!'));
-      navigate(data.status === 'published' ? `/gift/${createdGift.slug}` : `/editor/${createdGift.id}`);
+      if (createdGift?.paymentStatus === 'unpaid') {
+        toast.success(isAr ? 'تم حفظ الهدية! يرجى إتمام التفعيل لنشرها 💳' : 'Gift saved! Please complete activation to publish 💳');
+        navigate(`/checkout/${createdGift.id}`);
+      } else if (data.status === 'published') {
+        toast.success(isAr ? 'تم نشر الهدية بنجاح! 🎉' : 'Gift published! 🎉');
+        navigate(`/gift/${createdGift.slug}`);
+      } else {
+        toast.success(isAr ? 'تم حفظ المسودة!' : 'Draft saved!');
+        navigate(`/editor/${createdGift.id}`);
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? t('error_generic'));
     } finally {

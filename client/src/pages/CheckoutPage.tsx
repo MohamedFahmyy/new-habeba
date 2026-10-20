@@ -40,6 +40,8 @@ export default function CheckoutPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message ?? t('error_generic')),
   });
 
+  const isAr = t('dir') === 'rtl';
+
   if (!paySettings) return null;
 
   // Free mode
@@ -48,10 +50,14 @@ export default function CheckoutPage() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="glass-card p-12 text-center max-w-md">
           <div className="text-6xl mb-4">🎉</div>
-          <h1 className="text-2xl font-bold text-white mb-3">{t('pay_free_mode_notice')}</h1>
-          <p className="text-white/50 mb-6">Publishing is currently free. Your gift is ready!</p>
-          <button onClick={() => navigate(`/gift/${gift?.slug}`)} className="btn-primary">
-            View Your Gift →
+          <h1 className="text-2xl font-bold text-white mb-3">
+            {isAr ? 'المنصة مجانية بالكامل!' : t('pay_free_mode_notice')}
+          </h1>
+          <p className="text-white/50 mb-6">
+            {isAr ? 'الدفع غير مطلوب حالياً. هديتك مفعلة ومتاحة مجاناً بدون أي رسوم!' : 'Publishing is currently free. Your gift is ready!'}
+          </p>
+          <button onClick={() => navigate(gift?.slug ? `/gift/${gift.slug}` : '/dashboard')} className="btn-primary">
+            {isAr ? 'عرض هديتك الآن ←' : 'View Your Gift →'}
           </button>
         </div>
       </div>
@@ -63,11 +69,17 @@ export default function CheckoutPage() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="glass-card p-12 text-center max-w-md">
           <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-3">Payment Submitted!</h1>
+          <h1 className="text-2xl font-bold text-white mb-3">
+            {isAr ? 'تم إرسال بيانات التحويل بنجاح!' : 'Payment Submitted!'}
+          </h1>
           <p className="text-white/50 mb-6">
-            We received your transfer details. Once verified (usually within a few hours), your gift will go live automatically.
+            {isAr
+              ? 'تم استلام بيانات التحويل، وسيقوم فريق العمل بمراجعتها وتفعيل هديتك في أسرع وقت.'
+              : 'We received your transfer details. Once verified (usually within a few hours), your gift will go live automatically.'}
           </p>
-          <button onClick={() => navigate('/dashboard')} className="btn-primary">Back to Dashboard</button>
+          <button onClick={() => navigate('/dashboard')} className="btn-primary">
+            {isAr ? 'العودة للوحة التحكم' : 'Back to Dashboard'}
+          </button>
         </div>
       </div>
     );

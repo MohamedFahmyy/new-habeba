@@ -37,7 +37,7 @@ export interface Counter {
 }
 
 export type GiftStatus = 'draft' | 'published';
-export type PaymentStatus = 'free' | 'paid' | 'pending';
+export type PaymentStatus = 'free' | 'paid' | 'pending' | 'unpaid';
 
 export interface Gift {
   id: number;

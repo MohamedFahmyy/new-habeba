@@ -137,11 +137,11 @@ const SettingsUpdateSchema = z.object({
   payment_price: z.string().optional(),
   payment_currency: z.string().max(10).optional(),
   instapay_enabled: z.enum(['0', '1']).optional(),
-  instapay_address: z.string().max(255).optional(),
-  instapay_instructions: z.string().optional(),
+  instapay_address: z.string().max(255).optional().nullable(),
+  instapay_instructions: z.string().optional().nullable(),
   vodafone_cash_enabled: z.enum(['0', '1']).optional(),
-  vodafone_cash_number: z.string().max(20).optional(),
-  vodafone_cash_instructions: z.string().optional(),
+  vodafone_cash_number: z.string().max(20).optional().nullable(),
+  vodafone_cash_instructions: z.string().optional().nullable(),
   card_enabled: z.enum(['0', '1']).optional(),
   require_manual_review: z.enum(['0', '1']).optional(),
 });
@@ -150,7 +150,7 @@ router.patch('/settings', async (req, res, next) => {
   try {
     const data = SettingsUpdateSchema.parse(req.body);
     for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined) await setSetting(key, value);
+      if (value !== undefined) await setSetting(key, value === null ? '' : String(value));
     }
     const settings = await getAllSettings();
     res.json({ success: true, settings });

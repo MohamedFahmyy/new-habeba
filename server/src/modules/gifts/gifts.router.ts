@@ -102,8 +102,12 @@ router.post('/', requireAuth, async (req, res, next) => {
     const slug = data.slug || generateSlug(data.senderName, data.recipientName);
     const editToken = uuidv4();
 
+    const paymentsEnabled = (await getSettingValue('payments_enabled')) === '1';
+    const paymentStatus = paymentsEnabled ? 'unpaid' : 'free';
+    const status = (paymentsEnabled && data.status === 'published') ? 'draft' : data.status;
+
     const gift = await prisma.gift.create({
-      data: { ...data, slug, editToken, userId: req.session.userId, paymentStatus: 'free' },
+      data: { ...data, status, slug, editToken, userId: req.session.userId, paymentStatus },
     });
 
     res.status(201).json({ success: true, gift });
@@ -121,16 +125,24 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     assertOwnership(existing, req.session.userId);
 
     const data = GiftUpdateSchema.parse(req.body);
+    const paymentsEnabled = (await getSettingValue('payments_enabled')) === '1';
 
     // Payment gate check for publishing
     if (data.status === 'published') {
-      const paymentsEnabled = (await getSettingValue('payments_enabled')) === '1';
       if (paymentsEnabled && existing.paymentStatus !== 'paid' && existing.paymentStatus !== 'free') {
         throw new AppError(402, 'Payment required before publishing', 'PAYMENT_REQUIRED');
       }
     }
 
-    const gift = await prisma.gift.update({ where: { id }, data });
+    // If payments are currently disabled and gift was unpaid, auto-convert it to free
+    const paymentStatusUpdate = (!paymentsEnabled && existing.paymentStatus === 'unpaid')
+      ? { paymentStatus: 'free' }
+      : {};
+
+    const gift = await prisma.gift.update({
+      where: { id },
+      data: { ...data, ...paymentStatusUpdate },
+    });
     res.json({ success: true, gift });
   } catch (err) { next(err); }
 });

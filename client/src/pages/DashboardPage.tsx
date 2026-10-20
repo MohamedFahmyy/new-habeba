@@ -21,6 +21,11 @@ function GiftStatusBadge({ gift }: { gift: Gift }) {
       {t('dash_payment_pending')}
     </span>
   );
+  if (gift.paymentStatus === 'unpaid') return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs">
+      {t('dash_payment_unpaid')}
+    </span>
+  );
   if (gift.status === 'published') return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs">
       {t('dash_status_published')}
@@ -172,8 +177,8 @@ export default function DashboardPage() {
                       <button onClick={() => duplicateMutation.mutate(gift.id)} className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1">
                         <Copy className="w-3 h-3" /> {t('dash_action_duplicate')}
                       </button>
-                      {gift.paymentStatus === 'free' && (
-                        <Link to={`/checkout/${gift.id}`} className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1 text-yellow-400 border-yellow-500/20">
+                      {gift.paymentStatus === 'unpaid' && (
+                        <Link to={`/checkout/${gift.id}`} className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/10">
                           <CreditCard className="w-3 h-3" /> {t('dash_action_checkout')}
                         </Link>
                       )}

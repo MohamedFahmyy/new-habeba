@@ -14,8 +14,11 @@ async function start() {
 
   const app = createApp();
 
-  const server = app.listen(config.port, () => {
-    logger.info(`🚀 Habeba API server running on http://localhost:${config.port}`);
+  const host = '0.0.0.0';
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : config.port;
+
+  const server = app.listen(port, host, () => {
+    logger.info(`🚀 Habeba API server running on http://${host}:${port}`);
     logger.info(`   Environment: ${config.env}`);
     logger.info(`   Client URL:  ${config.clientUrl}`);
     logger.info(`   DB Provider: ${config.database.provider}`);

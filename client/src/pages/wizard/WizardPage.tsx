@@ -5,11 +5,13 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { Heart, ChevronRight, ChevronLeft, Check, Eye, Sparkles, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { giftsApi } from '../../services/api';
-import { THEMES } from '../../lib/themes';
-import type { WizardFormData } from '../../types';
+import { THEMES, getThemeById } from '../../lib/themes';
+import ThemePreviewModal from '../../components/themes/ThemePreviewModal';
+import PhotoUploader, { type UploadedPhoto } from '../../components/media/PhotoUploader';
+import type { WizardFormData, Theme } from '../../types';
 
 // ── Step schemas ─────────────────────────────────────────────────────────────
 const step1Schema = z.object({
@@ -73,37 +75,115 @@ function Step1({ register, errors }: any) {
   );
 }
 
-function Step2({ register, watch, setValue }: any) {
+function Step2({ watch, setValue }: any) {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const selectedTheme = watch('themeId');
+  const [modalTheme, setModalTheme] = useState<Theme | null>(null);
+
+  const currentTheme = getThemeById(selectedTheme);
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-white mb-6">{t('wiz_step2')}</h2>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">{t('wiz_step2')}</h2>
+          <p className="text-white/40 text-xs mt-1">
+            {isAr
+              ? 'اختر الطابع الجمالي لموقعك، واضغط زر المعاينة لمشاهدة تفاصيل القالب'
+              : 'Choose the visual style for your gift, and click preview to see full details'}
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {THEMES.map(theme => (
           <div
             key={theme.id}
             onClick={() => setValue('themeId', theme.id)}
-            className={`cursor-pointer glass-card overflow-hidden transition-all hover:scale-[1.02] ${
+            className={`group cursor-pointer glass-card overflow-hidden transition-all duration-300 hover:scale-[1.02] relative ${
               selectedTheme === theme.id ? 'border-pink-500 ring-2 ring-pink-500/50' : 'hover:border-white/30'
             }`}
           >
-            <div className={`h-24 ${theme.previewGradient} flex items-center justify-center`}>
-              <Heart className="w-6 h-6 text-white/40 fill-white/30" />
+            {/* Visual Header */}
+            <div className={`h-24 ${theme.previewGradient} flex items-center justify-center relative`}>
+              <Heart className="w-6 h-6 text-white/40 fill-white/30 group-hover:scale-110 transition-transform" />
+
+              {/* Selection Checkmark */}
               {selectedTheme === theme.id && (
-                <div className="absolute w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center top-2 end-2">
+                <div className="absolute w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center top-2 end-2 shadow-lg">
                   <Check className="w-4 h-4 text-white" />
                 </div>
               )}
+
+              {/* Preview Button on Hover / Touch */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setModalTheme(theme);
+                }}
+                className="absolute bottom-2 inset-x-2 py-1 px-2 rounded-lg bg-black/60 hover:bg-black/90 backdrop-blur-md text-white text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all opacity-90 group-hover:opacity-100 hover:text-pink-300"
+                title={isAr ? 'معاينة القالب' : 'Preview Theme'}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>{isAr ? 'معاينة القالب' : 'Preview'}</span>
+              </button>
             </div>
-            <div className="p-2 text-center">
-              <p className="text-white text-xs font-medium">{isAr ? theme.nameAr : theme.name}</p>
+
+            {/* Info */}
+            <div className="p-2.5 text-center">
+              <p className="text-white text-xs font-semibold">{isAr ? theme.nameAr : theme.name}</p>
+              <p className="text-white/40 text-[10px] line-clamp-1 mt-0.5">
+                {isAr ? theme.descriptionAr : theme.description}
+              </p>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Selected Theme Highlight Banner */}
+      {currentTheme && (
+        <div className="p-4 rounded-2xl glass-card flex items-center justify-between gap-4 border border-white/10 bg-white/[0.03]">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+              style={{ background: `linear-gradient(135deg, ${currentTheme.primaryColor}, ${currentTheme.secondaryColor})` }}
+            >
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-white text-sm font-semibold flex items-center gap-2">
+                <span>{isAr ? currentTheme.nameAr : currentTheme.name}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/30">
+                  {isAr ? 'القالب المختار' : 'Selected'}
+                </span>
+              </p>
+              <p className="text-white/50 text-xs mt-0.5">
+                {isAr ? currentTheme.descriptionAr : currentTheme.description}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setModalTheme(currentTheme)}
+            className="btn-secondary px-3 py-2 text-xs flex items-center gap-1.5 shrink-0 hover:border-pink-500/50"
+          >
+            <Eye className="w-4 h-4 text-pink-400" />
+            <span>{isAr ? 'معاينة حية كاملة' : 'Full Live Preview'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Theme Interactive Preview Modal */}
+      <ThemePreviewModal
+        theme={modalTheme}
+        isOpen={!!modalTheme}
+        onClose={() => setModalTheme(null)}
+        onSelect={(themeId) => setValue('themeId', themeId)}
+        isSelected={selectedTheme === modalTheme?.id}
+      />
     </div>
   );
 }
@@ -122,6 +202,26 @@ function Step3({ register }: any) {
         <label className="label-text">{t('wiz_music_title')}</label>
         <input {...register('musicTitle')} className="input-field" placeholder="Our Favorite Song" />
       </div>
+    </div>
+  );
+}
+
+function Step4({ photos, setPhotos }: { photos: UploadedPhoto[]; setPhotos: (p: UploadedPhoto[]) => void }) {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-white">{t('wiz_step4')}</h2>
+        <p className="text-white/50 text-sm mt-1">
+          {isAr
+            ? 'ارفع صور ذكرياتكما معاً وأضف تعليقات عليها لتظهر في معرض صور رومانسي ساحر.'
+            : 'Upload photos of your special moments together with titles and captions for a romantic gallery.'}
+        </p>
+      </div>
+
+      <PhotoUploader photos={photos} onChange={setPhotos} />
     </div>
   );
 }
@@ -154,31 +254,37 @@ function Step5({ register }: any) {
   );
 }
 
-function Step6({ watch, setValue }: any) {
-  const { t } = useTranslation();
+function Step6({ watch, setValue, photosCount }: any) {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
   const values = watch();
+  const currentTheme = getThemeById(values.themeId);
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-white mb-6">{t('wiz_step6')}</h2>
       {/* Summary */}
       <div className="glass-card p-5 space-y-3">
-        <h3 className="text-white font-semibold">Gift Summary</h3>
+        <h3 className="text-white font-semibold flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-pink-400" />
+          <span>{isAr ? 'ملخص الهدية' : 'Gift Summary'}</span>
+        </h3>
         {[
-          ['Title', values.title],
-          ['From', values.senderName],
-          ['To', values.recipientName],
-          ['Theme', values.themeId],
+          [isAr ? 'العنوان' : 'Title', values.title || '—'],
+          [isAr ? 'المرسل' : 'From', values.senderName || '—'],
+          [isAr ? 'المستلم' : 'To', values.recipientName || '—'],
+          [isAr ? 'القالب المختار' : 'Theme', isAr ? currentTheme.nameAr : currentTheme.name],
+          [isAr ? 'الصور المرفوعة' : 'Photos', `${photosCount} ${isAr ? 'صورة' : 'photos'}`],
         ].map(([label, val]) => (
-          <div key={label} className="flex justify-between text-sm">
+          <div key={label} className="flex justify-between text-sm py-1 border-b border-white/5 last:border-0">
             <span className="text-white/40">{label}</span>
-            <span className="text-white">{val}</span>
+            <span className="text-white font-medium">{val}</span>
           </div>
         ))}
       </div>
       {/* Publish mode */}
       <div className="glass-card p-5">
-        <h3 className="text-white font-semibold mb-4">Publish Setting</h3>
+        <h3 className="text-white font-semibold mb-4">{isAr ? 'إعداد النشر' : 'Publish Setting'}</h3>
         <div className="flex gap-3">
           {['draft', 'published'].map(s => (
             <button
@@ -202,10 +308,12 @@ function Step6({ watch, setValue }: any) {
 
 // ── Wizard ─────────────────────────────────────────────────────────────────────
 export default function WizardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
 
   const methods = useForm<WizardFormData>({
     resolver: zodResolver(fullSchema),
@@ -228,8 +336,27 @@ export default function WizardPage() {
     try {
       const musicVideoId = data.musicUrl ? extractYouTubeId(data.musicUrl) : '';
       const res = await giftsApi.create({ ...data, musicVideoId });
-      toast.success(data.status === 'published' ? 'Gift published! 🎉' : 'Draft saved!');
-      navigate(data.status === 'published' ? `/gift/${res.data.gift.slug}` : `/editor/${res.data.gift.id}`);
+      const createdGift = res.data.gift;
+
+      // Automatically attach all uploaded photos as memories
+      if (photos.length > 0 && createdGift?.id) {
+        for (let i = 0; i < photos.length; i++) {
+          const photo = photos[i];
+          try {
+            await giftsApi.addMemory(createdGift.id, {
+              imageUrl: photo.imageUrl,
+              title: photo.title || undefined,
+              caption: photo.caption || undefined,
+              sortOrder: i,
+            });
+          } catch (memErr) {
+            console.error('Failed to attach memory:', memErr);
+          }
+        }
+      }
+
+      toast.success(data.status === 'published' ? (isAr ? 'تم نشر الهدية بنجاح! 🎉' : 'Gift published! 🎉') : (isAr ? 'تم حفظ المسودة!' : 'Draft saved!'));
+      navigate(data.status === 'published' ? `/gift/${createdGift.slug}` : `/editor/${createdGift.id}`);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? t('error_generic'));
     } finally {
@@ -239,11 +366,11 @@ export default function WizardPage() {
 
   const stepComponents = [
     <Step1 register={register} errors={errors} />,
-    <Step2 register={register} watch={watch} setValue={setValue} />,
+    <Step2 watch={watch} setValue={setValue} />,
     <Step3 register={register} />,
-    <div className="space-y-4"><h2 className="text-2xl font-bold text-white mb-4">{t('wiz_step4')}</h2><p className="text-white/50">Upload photos after saving your gift in the editor.</p></div>,
+    <Step4 photos={photos} setPhotos={setPhotos} />,
     <Step5 register={register} />,
-    <Step6 watch={watch} setValue={setValue} />,
+    <Step6 watch={watch} setValue={setValue} photosCount={photos.length} />,
   ];
 
   return (

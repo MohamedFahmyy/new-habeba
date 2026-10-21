@@ -41,12 +41,22 @@ npm run build
 echo -e "${GREEN}✓ Build succeeded.${NC}"
 
 # 3. Synchronize Database
-echo -e "\n${YELLOW}[3/4] Synchronizing MySQL database tables...${NC}"
+echo -e "\n${YELLOW}[3/5] Synchronizing MySQL database tables...${NC}"
 npx prisma db push --schema=./server/prisma/schema.prisma --accept-data-loss
 echo -e "${GREEN}✓ Database schema synchronized.${NC}"
 
-# 4. Reload PM2 (Zero Downtime)
-echo -e "\n${YELLOW}[4/4] Reloading application process...${NC}"
+# 4. Storage permissions & Upload Limits
+echo -e "\n${YELLOW}[4/5] Ensuring storage directory write permissions (777)...${NC}"
+mkdir -p "${APP_DIR}/storage/uploads/receipts"
+chmod -R 777 "${APP_DIR}/storage"
+if command -v nginx &>/dev/null && [ -d "/etc/nginx/conf.d" ]; then
+  echo "client_max_body_size 50M;" > /etc/nginx/conf.d/habeba_uploads.conf 2>/dev/null || true
+  nginx -t &>/dev/null && (systemctl reload nginx 2>/dev/null || service nginx reload 2>/dev/null || true)
+fi
+echo -e "${GREEN}✓ Storage upload permissions verified.${NC}"
+
+# 5. Reload PM2 (Zero Downtime)
+echo -e "\n${YELLOW}[5/5] Reloading application process...${NC}"
 pm2 reload "$PM2_APP_NAME" --update-env || pm2 start ecosystem.config.js
 pm2 save > /dev/null
 

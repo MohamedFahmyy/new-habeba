@@ -30,7 +30,9 @@ export const config = {
   },
 
   upload: {
-    dir: path.resolve(__dirname, '../../storage/uploads'),
+    dir: process.env.UPLOAD_DIR
+      ? path.resolve(process.env.UPLOAD_DIR)
+      : path.resolve(process.cwd(), 'storage/uploads'),
     maxFileSizeBytes: parseInt(optional('MAX_FILE_SIZE_BYTES', String(25 * 1024 * 1024)), 10),
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
     allowedSignatures: {

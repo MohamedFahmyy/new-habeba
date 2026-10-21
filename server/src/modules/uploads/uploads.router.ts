@@ -65,6 +65,19 @@ router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Serve payment receipts ──────────────────────────────────────────────────
+router.get('/receipts/:filename', async (req, res, next) => {
+  try {
+    const filename = path.basename(req.params.filename);
+    const filePath = path.join(config.upload.dir, 'receipts', filename);
+    const resolved = path.resolve(filePath);
+    if (!resolved.startsWith(path.resolve(config.upload.dir))) {
+      throw new AppError(400, 'Invalid path', 'INVALID_PATH');
+    }
+    res.sendFile(resolved);
+  } catch (err) { next(err); }
+});
+
 // ── Serve uploads (publicly viewable on gift pages with path traversal protection) ──
 router.get('/:userId/:filename', async (req, res, next) => {
   try {

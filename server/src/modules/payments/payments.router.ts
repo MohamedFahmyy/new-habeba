@@ -15,7 +15,7 @@ const router = Router();
 const receiptStorage = multer.memoryStorage();
 const receiptUpload = multer({
   storage: receiptStorage,
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  limits: { fileSize: config.upload.maxFileSizeBytes, files: 1 },
 });
 
 // ── Submit manual payment (InstaPay / Vodafone Cash) ─────────────────────────

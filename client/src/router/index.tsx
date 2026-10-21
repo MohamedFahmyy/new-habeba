@@ -68,6 +68,7 @@ export default function AppRouter() {
           {/* Admin */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<AdminDashboard />} />
+            <Route path=":tab" element={<AdminDashboard />} />
           </Route>
 
           {/* 404 */}

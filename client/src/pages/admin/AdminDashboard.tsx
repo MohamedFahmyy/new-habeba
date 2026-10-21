@@ -334,7 +334,7 @@ function PaymentsTab() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const qc = useQueryClient();
-  const [filter, setFilter] = useState<'all' | 'awaiting_review' | 'approved' | 'rejected'>('awaiting_review');
+  const [filter, setFilter] = useState<'all' | 'awaiting_review' | 'approved' | 'rejected'>('all');
   const [selectedReceipt, setSelectedReceipt] = useState<{ url: string; title: string } | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -363,8 +363,10 @@ function PaymentsTab() {
   if (isLoading) return <div className="text-white/50 p-6">{isAr ? 'جاري تحميل سجلات الدفع...' : 'Loading payments...'}</div>;
 
   const allPayments = (data ?? []) as (Payment & { user?: any; gift?: any })[];
-  const filtered = filter === 'all' ? allPayments : allPayments.filter(p => p.status === filter);
   const pendingCount = allPayments.filter(p => p.status === 'awaiting_review').length;
+  const approvedCount = allPayments.filter(p => p.status === 'approved').length;
+  const rejectedCount = allPayments.filter(p => p.status === 'rejected').length;
+  const filtered = filter === 'all' ? allPayments : allPayments.filter(p => p.status === filter);
 
   return (
     <div className="space-y-6">
@@ -372,25 +374,31 @@ function PaymentsTab() {
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <span>{t('adm_nav_payments')}</span>
-            {pendingCount > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                {pendingCount} {isAr ? 'بانتظار المراجعة' : 'pending'}
-              </span>
-            )}
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-white/70">
+              {allPayments.length} {isAr ? 'إجمالي المدفوعات' : 'total'}
+            </span>
           </h2>
           <p className="text-white/50 text-xs mt-1">
             {isAr
-              ? 'مراجعة إيصالات التحويل البنكي وتأكيد المعاملات لتفعيل هدايا العملاء.'
-              : 'Inspect transfer receipts and approve payments to publish gifts.'}
+              ? 'سجل كافة المدفوعات السابقة والتحويلات الحالية، مع إمكانية فحص الإيصالات المرفقة والاعتماد.'
+              : 'Complete history of past and pending payments, receipts inspection, and approvals.'}
           </p>
         </div>
 
-        {/* Filter Pills */}
+        {/* Filter Pills with real-time counters */}
         <div className="flex gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 text-xs">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+              filter === 'all' ? 'bg-pink-500 text-white shadow-md' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            {isAr ? 'كافة المدفوعات' : 'All'} ({allPayments.length})
+          </button>
           <button
             onClick={() => setFilter('awaiting_review')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              filter === 'awaiting_review' ? 'bg-pink-500 text-white shadow-md' : 'text-white/60 hover:text-white'
+              filter === 'awaiting_review' ? 'bg-amber-500 text-black font-semibold shadow-md' : 'text-white/60 hover:text-white'
             }`}
           >
             {isAr ? 'قيد المراجعة' : 'Pending'} ({pendingCount})
@@ -398,34 +406,46 @@ function PaymentsTab() {
           <button
             onClick={() => setFilter('approved')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              filter === 'approved' ? 'bg-pink-500 text-white shadow-md' : 'text-white/60 hover:text-white'
+              filter === 'approved' ? 'bg-emerald-500 text-white shadow-md' : 'text-white/60 hover:text-white'
             }`}
           >
-            {isAr ? 'المقبولة' : 'Approved'}
+            {isAr ? 'المقبولة' : 'Approved'} ({approvedCount})
           </button>
           <button
             onClick={() => setFilter('rejected')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              filter === 'rejected' ? 'bg-pink-500 text-white shadow-md' : 'text-white/60 hover:text-white'
+              filter === 'rejected' ? 'bg-red-500 text-white shadow-md' : 'text-white/60 hover:text-white'
             }`}
           >
-            {isAr ? 'المرفوضة' : 'Rejected'}
-          </button>
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              filter === 'all' ? 'bg-pink-500 text-white shadow-md' : 'text-white/60 hover:text-white'
-            }`}
-          >
-            {isAr ? 'الكل' : 'All'}
+            {isAr ? 'المرفوضة' : 'Rejected'} ({rejectedCount})
           </button>
         </div>
       </div>
 
+      {/* Pending Alert Notice */}
+      {pendingCount > 0 && filter !== 'awaiting_review' && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <CreditCard className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <p className="text-amber-200 text-sm font-medium">
+              {isAr
+                ? `لديك ${pendingCount} طلب تحويل ينتظر المراجعة والتأكيد لتفعيل هدايا العملاء.`
+                : `You have ${pendingCount} payment transfer(s) awaiting verification.`}
+            </p>
+          </div>
+          <button
+            onClick={() => setFilter('awaiting_review')}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-black font-bold text-xs whitespace-nowrap hover:bg-amber-400 transition-colors"
+          >
+            {isAr ? 'فحص الطلبات المعلقة' : 'Review Pending'}
+          </button>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="glass-card p-12 text-center text-white/40">
           <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>{isAr ? 'لا توجد طلبات دفع في هذا القسم' : 'No payments found in this filter'}</p>
+          <p>{isAr ? 'لا توجد مدفوعات في هذا القسم' : 'No payments found in this section'}</p>
         </div>
       ) : (
         <div className="grid gap-4">

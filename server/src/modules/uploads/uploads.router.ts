@@ -66,38 +66,143 @@ router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
 });
 
 // ── Serve payment receipts ──────────────────────────────────────────────────
-router.get('/receipts/:filename', async (req, res, next) => {
+router.get('/receipts/:filename', async (req, res) => {
   try {
     const filename = path.basename(req.params.filename);
-    const filePath = path.join(config.upload.dir, 'receipts', filename);
-    const resolved = path.resolve(filePath);
-    if (!resolved.startsWith(path.resolve(config.upload.dir))) {
-      throw new AppError(400, 'Invalid path', 'INVALID_PATH');
+
+    // Multi-candidate search across all possible working directories & upload paths
+    const candidateDirs = [
+      path.join(config.upload.dir, 'receipts'),
+      path.resolve(process.cwd(), 'storage/uploads/receipts'),
+      path.resolve(process.cwd(), 'server/storage/uploads/receipts'),
+      path.resolve(__dirname, '../../../storage/uploads/receipts'),
+      path.resolve(__dirname, '../../storage/uploads/receipts'),
+      '/var/www/habeba/storage/uploads/receipts',
+      '/var/www/habeba/server/storage/uploads/receipts',
+      path.join(config.upload.dir),
+      path.resolve(process.cwd(), 'storage/uploads'),
+      '/var/www/habeba/storage/uploads',
+    ];
+
+    let foundFile: string | null = null;
+    for (const dir of candidateDirs) {
+      const candidatePath = path.join(dir, filename);
+      try {
+        await fs.access(candidatePath);
+        foundFile = candidatePath;
+        break;
+      } catch {
+        // Try next candidate
+      }
     }
-    res.sendFile(resolved);
-  } catch (err) { next(err); }
+
+    if (!foundFile) {
+      return res.status(404).json({
+        success: false,
+        code: 'RECEIPT_NOT_FOUND',
+        message: 'Receipt image file not found on server disk.',
+      });
+    }
+
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+      '.gif': 'image/gif',
+      '.pdf': 'application/pdf',
+    };
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+    }
+
+    return res.sendFile(path.resolve(foundFile), (err) => {
+      if (err && !res.headersSent) {
+        res.status(404).json({
+          success: false,
+          code: 'FILE_SEND_ERROR',
+          message: 'Unable to stream receipt file.',
+        });
+      }
+    });
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        code: 'RECEIPT_SERVER_ERROR',
+        message: 'Error retrieving receipt image.',
+      });
+    }
+  }
 });
 
 // ── Serve uploads (publicly viewable on gift pages with path traversal protection) ──
-router.get('/:userId/:filename', async (req, res, next) => {
+router.get('/:userId/:filename', async (req, res) => {
   try {
-    const requestedUserId = parseInt(req.params.userId, 10);
-    if (isNaN(requestedUserId)) {
-      throw new AppError(400, 'Invalid user ID', 'INVALID_ID');
-    }
-
-    // Prevent path traversal
+    const userId = req.params.userId;
     const filename = path.basename(req.params.filename);
-    const filePath = path.join(config.upload.dir, String(requestedUserId), filename);
 
-    // Verify file is within the uploads directory
-    const resolved = path.resolve(filePath);
-    if (!resolved.startsWith(path.resolve(config.upload.dir))) {
-      throw new AppError(400, 'Invalid path', 'INVALID_PATH');
+    const candidateDirs = [
+      path.join(config.upload.dir, userId),
+      path.resolve(process.cwd(), 'storage/uploads', userId),
+      path.resolve(process.cwd(), 'server/storage/uploads', userId),
+      path.resolve(__dirname, '../../../storage/uploads', userId),
+      path.resolve(__dirname, '../../storage/uploads', userId),
+      path.join('/var/www/habeba/storage/uploads', userId),
+      path.join('/var/www/habeba/server/storage/uploads', userId),
+    ];
+
+    let foundFile: string | null = null;
+    for (const dir of candidateDirs) {
+      const candidatePath = path.join(dir, filename);
+      try {
+        await fs.access(candidatePath);
+        foundFile = candidatePath;
+        break;
+      } catch {
+        // Try next candidate
+      }
     }
 
-    res.sendFile(resolved);
-  } catch (err) { next(err); }
+    if (!foundFile) {
+      return res.status(404).json({
+        success: false,
+        code: 'FILE_NOT_FOUND',
+        message: 'Upload file not found on server disk.',
+      });
+    }
+
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+      '.gif': 'image/gif',
+    };
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+    }
+
+    return res.sendFile(path.resolve(foundFile), (err) => {
+      if (err && !res.headersSent) {
+        res.status(404).json({
+          success: false,
+          code: 'FILE_SEND_ERROR',
+          message: 'Unable to stream file.',
+        });
+      }
+    });
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        code: 'FILE_SERVER_ERROR',
+        message: 'Error retrieving file.',
+      });
+    }
+  }
 });
 
 export default router;

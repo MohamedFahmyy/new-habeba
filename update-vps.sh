@@ -48,7 +48,12 @@ echo -e "${GREEN}✓ Database schema synchronized.${NC}"
 # 4. Storage permissions & Upload Limits
 echo -e "\n${YELLOW}[4/5] Ensuring storage directory write permissions (777)...${NC}"
 mkdir -p "${APP_DIR}/storage/uploads/receipts"
-chmod -R 777 "${APP_DIR}/storage"
+mkdir -p "${APP_DIR}/server/storage/uploads/receipts" 2>/dev/null || true
+if [ -d "${APP_DIR}/server/storage/uploads/receipts" ]; then
+  cp -rn "${APP_DIR}/server/storage/uploads/receipts/"* "${APP_DIR}/storage/uploads/receipts/" 2>/dev/null || true
+fi
+chmod -R 777 "${APP_DIR}/storage" 2>/dev/null || true
+chmod -R 777 "${APP_DIR}/server/storage" 2>/dev/null || true
 if command -v nginx &>/dev/null && [ -d "/etc/nginx/conf.d" ]; then
   echo "client_max_body_size 50M;" > /etc/nginx/conf.d/habeba_uploads.conf 2>/dev/null || true
   nginx -t &>/dev/null && (systemctl reload nginx 2>/dev/null || service nginx reload 2>/dev/null || true)

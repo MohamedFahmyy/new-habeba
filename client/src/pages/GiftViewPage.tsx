@@ -346,30 +346,39 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
                       {/* Content Card (Zigzag) */}
                       <div className="w-full md:w-[46%]">
                         <div
-                          className="glass-card p-4 sm:p-5 rounded-3xl border shadow-2xl backdrop-blur-xl group hover:scale-[1.02] transition-all duration-300"
+                          className="group relative rounded-3xl overflow-hidden glass-card border shadow-2xl backdrop-blur-xl hover:scale-[1.02] transition-all duration-300 min-h-[380px] sm:min-h-[440px] flex flex-col justify-end"
                           style={{
                             borderColor: `${theme.primaryColor}35`,
                             boxShadow: `0 10px 40px -10px ${theme.primaryColor}25`,
                           }}
                         >
-                          {/* Photo */}
-                          <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-black/40 mb-4 border border-white/10">
-                            <img
-                              src={photoUrl}
-                              alt={entry.title || 'Timeline photo'}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                            />
-                          </div>
+                          {/* Photo - Fills entire card */}
+                          <img
+                            src={photoUrl}
+                            alt={entry.title || 'Timeline photo'}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
 
-                          {/* Text Quotes */}
-                          <div className="text-center space-y-1.5 px-2">
+                          {/* Dark romantic gradient overlay for high text contrast */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-black/15 opacity-85 group-hover:opacity-90 transition-opacity" />
+
+                          {/* Content Overlay */}
+                          <div className="relative z-10 p-6 sm:p-7 text-center space-y-2">
+                            {entry.eventDate && (
+                              <span
+                                className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase mb-1 backdrop-blur-md border border-white/20 text-white shadow-md"
+                                style={{ backgroundColor: `${theme.primaryColor}50` }}
+                              >
+                                {entry.eventDate}
+                              </span>
+                            )}
                             {entry.description && (
-                              <p className="font-serif-romantic italic text-base sm:text-lg text-white/90">
+                              <p className="font-serif-romantic italic text-base sm:text-xl text-white font-normal drop-shadow-md leading-relaxed">
                                 "{entry.description}"
                               </p>
                             )}
                             {entry.title && (
-                              <p className="text-white/60 text-xs sm:text-sm font-light">
+                              <p className="text-white/70 text-xs sm:text-sm font-light">
                                 {entry.title}
                               </p>
                             )}

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Save, Eye, Sparkles, Image as ImageIcon, Palette, ExternalLink, Heart } from 'lucide-react';
+import { Save, Eye, Sparkles, Image as ImageIcon, Palette, ExternalLink, Heart, Plus, Trash2, Infinity as InfinityIcon, Video, Camera, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { giftsApi, uploadsApi } from '../services/api';
 import { THEMES, getThemeById } from '../lib/themes';
@@ -11,6 +11,21 @@ import ThemePreviewModal from '../components/themes/ThemePreviewModal';
 import PhotoUploader, { type UploadedPhoto } from '../components/media/PhotoUploader';
 import { extractYouTubeId } from '../lib/youtube';
 import type { Theme } from '../types';
+
+interface EditableCounter {
+  id?: number;
+  label: string;
+  targetValue: number;
+  icon: string;
+  sortOrder: number;
+}
+
+const DEFAULT_COUNTERS: EditableCounter[] = [
+  { label: 'MEMORIES', targetValue: 1000, icon: 'infinity', sortOrder: 0 },
+  { label: 'VIDEOS', targetValue: 50, icon: 'video', sortOrder: 1 },
+  { label: 'PHOTOS', targetValue: 150, icon: 'camera', sortOrder: 2 },
+  { label: 'DAYS TOGETHER', targetValue: 70, icon: 'heart', sortOrder: 3 },
+];
 
 export default function EditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +36,7 @@ export default function EditorPage() {
   const giftId = parseInt(id!, 10);
 
   const [modalTheme, setModalTheme] = useState<Theme | null>(null);
+  const [counters, setCounters] = useState<EditableCounter[]>(DEFAULT_COUNTERS);
 
   const { data: gift, isLoading } = useQuery({
     queryKey: ['gift', giftId],
@@ -33,16 +49,64 @@ export default function EditorPage() {
   useEffect(() => {
     if (gift) {
       reset(gift);
+      if (gift.counters && gift.counters.length > 0) {
+        setCounters(
+          [...gift.counters].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        );
+      } else {
+        setCounters(DEFAULT_COUNTERS);
+      }
     }
   }, [gift, reset]);
 
   const selectedThemeId = watch('themeId') || gift?.themeId || 'midnight';
   const currentTheme = getThemeById(selectedThemeId);
 
+  const handleCounterChange = (index: number, field: keyof EditableCounter, value: any) => {
+    setCounters(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleAddCounter = () => {
+    setCounters(prev => [
+      ...prev,
+      {
+        label: isAr ? 'أيام سعيدة' : 'HAPPY DAYS',
+        targetValue: 100,
+        icon: 'star',
+        sortOrder: prev.length,
+      },
+    ]);
+  };
+
+  const handleRemoveCounter = (index: number) => {
+    if (counters.length <= 1) {
+      toast.error(isAr ? 'يجب الإبقاء على بطاقة رقم واحدة على الأقل' : 'Keep at least one counter card');
+      return;
+    }
+    setCounters(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleResetCounters = () => {
+    setCounters(DEFAULT_COUNTERS);
+    toast.success(isAr ? 'تم استعادة الأرقام الافتراضية' : 'Reset to default numbers');
+  };
+
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       const musicVideoId = data.musicUrl ? extractYouTubeId(data.musicUrl) : (data.musicVideoId || '');
-      return giftsApi.update(giftId, { ...data, musicVideoId });
+      return giftsApi.update(giftId, {
+        ...data,
+        musicVideoId,
+        counters: counters.map((c, index) => ({
+          ...c,
+          sortOrder: index,
+          targetValue: Number(c.targetValue) || 0,
+        })),
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['gift', giftId] });
@@ -105,6 +169,27 @@ export default function EditorPage() {
       }
     } catch (err) {
       console.error('Failed to update memory:', err);
+    }
+  };
+
+  const renderCounterIcon = (icon: string) => {
+    switch (icon) {
+      case 'infinity':
+        return <InfinityIcon className="w-5 h-5 text-purple-400" />;
+      case 'video':
+        return <Video className="w-5 h-5 text-rose-400" />;
+      case 'camera':
+        return <Camera className="w-5 h-5 text-pink-400" />;
+      case 'heart':
+        return <Heart className="w-5 h-5 text-red-500 fill-red-500" />;
+      case 'star':
+        return <Sparkles className="w-5 h-5 text-amber-400" />;
+      case 'smile':
+        return <span className="text-lg">😊</span>;
+      case 'message':
+        return <span className="text-lg">💌</span>;
+      default:
+        return <Heart className="w-5 h-5 text-red-500 fill-red-500" />;
     }
   };
 
@@ -329,7 +414,132 @@ export default function EditorPage() {
             </div>
           </div>
 
-          {/* Section 6: Surprise & Publication */}
+          {/* Section 6: Our Numbers (Counters) */}
+          <div className="glass-card p-6 rounded-3xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+              <div className="space-y-1">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>🔢 {isAr ? 'أرقامنا المميزة (Our Numbers)' : 'Our Numbers (Milestones)'}</span>
+                </h2>
+                <p className="text-white/50 text-xs sm:text-sm">
+                  {isAr
+                    ? 'خصص الأرقام والرموز التي تظهر في قسم أرقامنا (مثل الذكريات، الصور، الأيام معاً، الفيديوهات)'
+                    : 'Customize milestone numbers, icons, and labels displayed in the Our Numbers section'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer select-none bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 hover:border-pink-500/30 transition-colors">
+                  <input
+                    type="checkbox"
+                    {...register('showCounters')}
+                    className="w-4 h-4 rounded text-pink-500 focus:ring-pink-400 bg-white/10 border-white/20"
+                  />
+                  <span className="text-xs sm:text-sm font-medium text-white/90">
+                    {isAr ? 'إظهار هذا القسم' : 'Show Section'}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Counters Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {counters.map((c, index) => (
+                <div
+                  key={index}
+                  className="bg-white/5 border border-white/10 hover:border-pink-500/40 rounded-2xl p-4 space-y-3 relative transition-all duration-300 flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-xl bg-white/10 flex items-center justify-center">
+                        {renderCounterIcon(c.icon)}
+                      </div>
+                      <span className="text-xs font-bold text-white/60">#{index + 1}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCounter(index)}
+                      className="text-white/30 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors"
+                      title={isAr ? 'حذف هذا الرقم' : 'Delete counter'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    <div>
+                      <label className="text-[11px] font-medium text-white/50 block mb-1">
+                        {isAr ? 'الرمز / الأيقونة' : 'Icon'}
+                      </label>
+                      <select
+                        value={c.icon}
+                        onChange={(e) => handleCounterChange(index, 'icon', e.target.value)}
+                        className="input-field py-1.5 px-2.5 text-xs bg-slate-900/90 text-white"
+                      >
+                        <option value="infinity">∞ {isAr ? 'المالانهاية (Memories)' : 'Infinity (Memories)'}</option>
+                        <option value="video">📹 {isAr ? 'فيديو (Videos)' : 'Video (Videos)'}</option>
+                        <option value="camera">📷 {isAr ? 'كاميرا (Photos)' : 'Camera (Photos)'}</option>
+                        <option value="heart">❤️ {isAr ? 'قلب (Days Together)' : 'Heart (Days Together)'}</option>
+                        <option value="star">✨ {isAr ? 'نجوم وتألق (Moments)' : 'Stars / Sparkles'}</option>
+                        <option value="smile">😊 {isAr ? 'ابتسامات (Smiles)' : 'Smile (Smiles)'}</option>
+                        <option value="message">💌 {isAr ? 'رسائل حب (Love Notes)' : 'Letter / Notes'}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-medium text-white/50 block mb-1">
+                        {isAr ? 'الرقم المستهدف' : 'Target Number'}
+                      </label>
+                      <input
+                        type="number"
+                        value={c.targetValue}
+                        onChange={(e) => handleCounterChange(index, 'targetValue', parseInt(e.target.value, 10) || 0)}
+                        className="input-field py-1.5 px-2.5 text-base font-bold text-center"
+                        placeholder="1000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-medium text-white/50 block mb-1">
+                        {isAr ? 'النص / التسمية' : 'Label'}
+                      </label>
+                      <input
+                        type="text"
+                        value={c.label}
+                        onChange={(e) => handleCounterChange(index, 'label', e.target.value)}
+                        className="input-field py-1.5 px-2.5 text-xs font-semibold text-center uppercase tracking-wider"
+                        placeholder="MEMORIES"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleAddCounter}
+                className="btn-secondary flex items-center gap-2 py-2 px-4 text-xs font-semibold"
+              >
+                <Plus className="w-4 h-4 text-pink-400" />
+                <span>{isAr ? 'إضافة بطاقة رقم جديدة' : 'Add New Counter Card'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetCounters}
+                className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors py-1 px-2"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isAr ? 'استعادة الأرقام الافتراضية' : 'Reset to Default Numbers'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 7: Surprise & Publication */}
           <div className="glass-card p-6 rounded-3xl space-y-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span>🎁 {isAr ? 'المفاجأة والنشر' : 'Surprise & Publishing'}</span>

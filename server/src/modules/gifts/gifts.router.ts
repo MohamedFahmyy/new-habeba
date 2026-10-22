@@ -126,6 +126,15 @@ router.post('/', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Counter item schema ───────────────────────────────────────────────────────
+const CounterItemSchema = z.object({
+  id: z.number().int().optional(),
+  label: z.string().min(1).max(100),
+  targetValue: z.coerce.number().int().default(0),
+  icon: z.string().default('heart'),
+  sortOrder: z.coerce.number().int().default(0),
+});
+
 // ── Update gift ───────────────────────────────────────────────────────────────
 const GiftUpdateSchema = GiftCreateSchema.partial();
 
@@ -157,9 +166,27 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       ? { paymentStatus: 'free' }
       : {};
 
+    // Optional counters sync in patch
+    if (Array.isArray(req.body.counters)) {
+      const countersData = z.array(CounterItemSchema).parse(req.body.counters);
+      await prisma.$transaction([
+        prisma.counter.deleteMany({ where: { giftId: id } }),
+        prisma.counter.createMany({
+          data: countersData.map((c, idx) => ({
+            giftId: id,
+            label: c.label,
+            targetValue: Number(c.targetValue) || 0,
+            icon: c.icon || 'heart',
+            sortOrder: c.sortOrder ?? idx,
+          })),
+        }),
+      ]);
+    }
+
     const gift = await prisma.gift.update({
       where: { id },
       data: { ...data, ...(musicVideoId !== undefined ? { musicVideoId } : {}), ...paymentStatusUpdate },
+      include: { memories: { orderBy: { sortOrder: 'asc' } }, timelineEntries: { orderBy: { sortOrder: 'asc' } }, counters: { orderBy: { sortOrder: 'asc' } } },
     });
     res.json({ success: true, gift });
   } catch (err) { next(err); }
@@ -286,6 +313,38 @@ router.delete('/:id/timeline/:entryId', requireAuth, async (req, res, next) => {
     assertOwnership(gift, req.session.userId);
     await prisma.timelineEntry.delete({ where: { id: toId(req.params.entryId), giftId } });
     res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── Counters CRUD ─────────────────────────────────────────────────────────────
+router.put('/:id/counters', requireAuth, async (req, res, next) => {
+  try {
+    const giftId = toId(req.params.id);
+    const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+    if (!gift) throw new NotFoundError('Gift');
+    assertOwnership(gift, req.session.userId);
+
+    const countersData = z.array(CounterItemSchema).parse(req.body);
+
+    await prisma.$transaction([
+      prisma.counter.deleteMany({ where: { giftId } }),
+      prisma.counter.createMany({
+        data: countersData.map((c, idx) => ({
+          giftId,
+          label: c.label,
+          targetValue: c.targetValue,
+          icon: c.icon || 'heart',
+          sortOrder: c.sortOrder ?? idx,
+        })),
+      }),
+    ]);
+
+    const updated = await prisma.counter.findMany({
+      where: { giftId },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    res.json({ success: true, counters: updated });
   } catch (err) { next(err); }
 });
 

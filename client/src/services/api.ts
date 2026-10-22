@@ -50,6 +50,9 @@ export const giftsApi = {
 
   deleteTimeline: (giftId: number, entryId: number) =>
     api.delete(`/gifts/${giftId}/timeline/${entryId}`),
+
+  updateCounters: (giftId: number, counters: Array<{ id?: number; label: string; targetValue: number; icon: string; sortOrder?: number }>) =>
+    api.put<{ success: boolean; counters: any[] }>(`/gifts/${giftId}/counters`, counters),
 };
 
 // ── Uploads ───────────────────────────────────────────────────────────────────

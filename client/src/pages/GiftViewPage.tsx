@@ -511,17 +511,34 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
               {(gift.counters && gift.counters.length > 0
                 ? gift.counters
                 : [
-                    { id: 1, label: 'DAYS TOGETHER', targetValue: 70, icon: 'heart', sortOrder: 0 },
-                    { id: 2, label: 'PHOTOS', targetValue: 150, icon: 'camera', sortOrder: 1 },
-                    { id: 3, label: 'VIDEOS', targetValue: 50, icon: 'video', sortOrder: 2 },
-                    { id: 4, label: 'MEMORIES', targetValue: 1000, icon: 'infinity', sortOrder: 3 },
+                    { id: 1, label: 'MEMORIES', targetValue: 1000, icon: 'infinity', sortOrder: 0 },
+                    { id: 2, label: 'VIDEOS', targetValue: 50, icon: 'video', sortOrder: 1 },
+                    { id: 3, label: 'PHOTOS', targetValue: 150, icon: 'camera', sortOrder: 2 },
+                    { id: 4, label: 'DAYS TOGETHER', targetValue: 70, icon: 'heart', sortOrder: 3 },
                   ]
               ).map((counter, i) => {
                 const getIcon = () => {
-                  if (i === 0) return <Heart className="w-7 h-7 text-red-500 fill-red-500 animate-pulse mx-auto mb-3" />;
-                  if (i === 1) return <Camera className="w-7 h-7 text-pink-400 mx-auto mb-3" />;
-                  if (i === 2) return <Video className="w-7 h-7 text-rose-400 mx-auto mb-3" />;
-                  return <InfinityIcon className="w-7 h-7 text-purple-400 mx-auto mb-3" />;
+                  switch (counter.icon) {
+                    case 'infinity':
+                      return <InfinityIcon className="w-7 h-7 text-purple-400 mx-auto mb-3" />;
+                    case 'video':
+                      return <Video className="w-7 h-7 text-rose-400 mx-auto mb-3" />;
+                    case 'camera':
+                      return <Camera className="w-7 h-7 text-pink-400 mx-auto mb-3" />;
+                    case 'heart':
+                      return <Heart className="w-7 h-7 text-red-500 fill-red-500 animate-pulse mx-auto mb-3" />;
+                    case 'star':
+                      return <Sparkles className="w-7 h-7 text-amber-400 mx-auto mb-3" />;
+                    case 'smile':
+                      return <span className="text-2xl block mb-2">😊</span>;
+                    case 'message':
+                      return <span className="text-2xl block mb-2">💌</span>;
+                    default:
+                      if (i === 0) return <InfinityIcon className="w-7 h-7 text-purple-400 mx-auto mb-3" />;
+                      if (i === 1) return <Video className="w-7 h-7 text-rose-400 mx-auto mb-3" />;
+                      if (i === 2) return <Camera className="w-7 h-7 text-pink-400 mx-auto mb-3" />;
+                      return <Heart className="w-7 h-7 text-red-500 fill-red-500 animate-pulse mx-auto mb-3" />;
+                  }
                 };
 
                 return (
@@ -538,7 +555,7 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
                   >
                     {getIcon()}
                     <div className="font-serif-romantic font-bold text-3xl sm:text-4xl text-white mb-1.5">
-                      +{counter.targetValue.toLocaleString()}
+                      {counter.targetValue.toLocaleString()}+
                     </div>
                     <div className="text-white/60 text-[11px] sm:text-xs font-semibold tracking-widest uppercase">
                       {counter.label}

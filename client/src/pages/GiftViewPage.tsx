@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { giftsApi } from '../services/api';
 import type { Gift } from '../types';
 import { getThemeById, getDemoGiftBySlug, THEMES } from '../lib/themes';
-import { extractYouTubeId, getYouTubeEmbedUrl } from '../lib/youtube';
+import { extractYouTubeId } from '../lib/youtube';
+import { useYouTubeAudio, YouTubeAudioMount } from '../components/media/YouTubeAudioPlayer';
 
 function FloatingHeartsBackground({ icon = '❤️' }: { icon?: string }) {
   // Generate random static particles once
@@ -152,42 +153,7 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
 
   const heroBgPhoto = gift.memories?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1600&auto=format&fit=crop&q=80';
 
-  const cleanVideoId = extractYouTubeId(gift.musicVideoId) || extractYouTubeId(gift.musicUrl);
-  const [playing, setPlaying] = useState(true);
-  const [userManuallyPaused, setUserManuallyPaused] = useState(false);
-
-  // Global first-interaction unlock (click, touch, scroll, keydown)
-  useEffect(() => {
-    if (!cleanVideoId) return;
-
-    const unlockAudio = () => {
-      if (!userManuallyPaused) {
-        setPlaying(true);
-      }
-    };
-
-    window.addEventListener('click', unlockAudio, { passive: true });
-    window.addEventListener('touchstart', unlockAudio, { passive: true });
-    window.addEventListener('scroll', unlockAudio, { passive: true, once: true });
-    window.addEventListener('keydown', unlockAudio, { passive: true });
-
-    return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
-      window.removeEventListener('scroll', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
-    };
-  }, [cleanVideoId, userManuallyPaused]);
-
-  const togglePlay = () => {
-    if (playing) {
-      setUserManuallyPaused(true);
-      setPlaying(false);
-    } else {
-      setUserManuallyPaused(false);
-      setPlaying(true);
-    }
-  };
+  const { cleanId, isPlaying, togglePlay } = useYouTubeAudio(gift.musicVideoId, gift.musicUrl);
 
   return (
     <div
@@ -201,35 +167,18 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
       <FloatingHeartsBackground icon={theme.particleIcon || '❤️'} />
 
       {/* Top-Right "Our Song" Player Button */}
-      {cleanVideoId && (
+      {cleanId && (
         <OurSongPillPlayer
-          videoId={cleanVideoId}
+          videoId={cleanId}
           title={gift.musicTitle}
           themePrimary={theme.primaryColor}
-          playing={playing}
+          playing={isPlaying}
           onTogglePlay={togglePlay}
         />
       )}
 
-      {/* Background YouTube Audio Player */}
-      {cleanVideoId && playing && (
-        <iframe
-          key={cleanVideoId}
-          src={getYouTubeEmbedUrl(cleanVideoId)}
-          style={{
-            position: 'fixed',
-            top: '-9999px',
-            left: '-9999px',
-            width: '240px',
-            height: '240px',
-            opacity: 0,
-            pointerEvents: 'none',
-            border: 0,
-          }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          title="romantic background music"
-        />
-      )}
+      {/* Official YouTube Audio Engine Mount (hidden & non-throttled) */}
+      <YouTubeAudioMount cleanId={cleanId} />
 
       {/* ─── HERO SECTION ─────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 text-center overflow-hidden z-10">
@@ -292,7 +241,7 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
               <span>Open Your Gift</span>
             </a>
 
-            {cleanVideoId && (
+            {cleanId && (
               <button
                 type="button"
                 onClick={togglePlay}
@@ -301,9 +250,9 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
                   boxShadow: `0 4px 20px -2px ${theme.primaryColor}40`,
                 }}
               >
-                <Music className={`w-4 h-4 ${playing ? 'animate-bounce text-pink-400' : 'text-white/70'}`} />
-                <span>{playing ? (gift.musicTitle || 'Playing Our Song') : 'Play Our Song'}</span>
-                {playing ? <Pause className="w-3.5 h-3.5 text-white/70 ml-1" /> : <Play className="w-3.5 h-3.5 fill-white ml-1" />}
+                <Music className={`w-4 h-4 ${isPlaying ? 'animate-bounce text-pink-400' : 'text-white/70'}`} />
+                <span>{isPlaying ? (gift.musicTitle || 'Playing Our Song') : 'Play Our Song'}</span>
+                {isPlaying ? <Pause className="w-3.5 h-3.5 text-white/70 ml-1" /> : <Play className="w-3.5 h-3.5 fill-white ml-1" />}
               </button>
             )}
           </div>

@@ -346,24 +346,32 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
                       {/* Content Card (Zigzag) */}
                       <div className="w-full md:w-[46%]">
                         <div
-                          className="group relative rounded-3xl overflow-hidden glass-card border shadow-2xl backdrop-blur-xl hover:scale-[1.02] transition-all duration-300 min-h-[380px] sm:min-h-[440px] flex flex-col justify-end"
+                          className="glass-card p-3 sm:p-4 rounded-3xl border shadow-2xl backdrop-blur-xl group hover:scale-[1.01] transition-all duration-300 space-y-4"
                           style={{
                             borderColor: `${theme.primaryColor}35`,
                             boxShadow: `0 10px 40px -10px ${theme.primaryColor}25`,
                           }}
                         >
-                          {/* Photo - Fills entire card */}
-                          <img
-                            src={photoUrl}
-                            alt={entry.title || 'Timeline photo'}
-                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                          />
+                          {/* Photo Container - Entire image is 100% visible without cropping */}
+                          <div className="relative w-full rounded-2xl overflow-hidden bg-black/60 flex items-center justify-center min-h-[260px] sm:min-h-[320px] max-h-[500px]">
+                            {/* Ambient blurred glow matching photo colors */}
+                            <img
+                              src={photoUrl}
+                              alt=""
+                              aria-hidden="true"
+                              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-125 pointer-events-none"
+                            />
 
-                          {/* Dark romantic gradient overlay for high text contrast */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-black/15 opacity-85 group-hover:opacity-90 transition-opacity" />
+                            {/* Full Photo (object-contain ensures the whole photo shows completely) */}
+                            <img
+                              src={photoUrl}
+                              alt={entry.title || 'Timeline photo'}
+                              className="relative z-10 w-full h-auto max-h-[480px] object-contain rounded-xl group-hover:scale-[1.02] transition-transform duration-500 shadow-2xl"
+                            />
+                          </div>
 
-                          {/* Content Overlay */}
-                          <div className="relative z-10 p-6 sm:p-7 text-center space-y-2">
+                          {/* Content (Quotes & Details) */}
+                          <div className="px-2 pb-2 text-center space-y-2">
                             {entry.eventDate && (
                               <span
                                 className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase mb-1 backdrop-blur-md border border-white/20 text-white shadow-md"
@@ -373,12 +381,12 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
                               </span>
                             )}
                             {entry.description && (
-                              <p className="font-serif-romantic italic text-base sm:text-xl text-white font-normal drop-shadow-md leading-relaxed">
+                              <p className="font-serif-romantic italic text-base sm:text-xl text-white/95 font-normal drop-shadow leading-relaxed">
                                 "{entry.description}"
                               </p>
                             )}
                             {entry.title && (
-                              <p className="text-white/70 text-xs sm:text-sm font-light">
+                              <p className="text-white/60 text-xs sm:text-sm font-light">
                                 {entry.title}
                               </p>
                             )}

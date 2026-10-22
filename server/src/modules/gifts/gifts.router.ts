@@ -147,7 +147,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     }
 
     // Auto-extract musicVideoId if musicUrl was provided
-    let musicVideoId = data.musicVideoId;
+    let musicVideoId: string | null | undefined = data.musicVideoId;
     if (data.musicUrl !== undefined) {
       musicVideoId = extractYouTubeId(data.musicUrl) || (data.musicUrl ? existing.musicVideoId : null);
     }

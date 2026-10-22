@@ -9,6 +9,7 @@ import { giftsApi, uploadsApi } from '../services/api';
 import { THEMES, getThemeById } from '../lib/themes';
 import ThemePreviewModal from '../components/themes/ThemePreviewModal';
 import PhotoUploader, { type UploadedPhoto } from '../components/media/PhotoUploader';
+import { extractYouTubeId } from '../lib/youtube';
 import type { Theme } from '../types';
 
 export default function EditorPage() {
@@ -39,7 +40,10 @@ export default function EditorPage() {
   const currentTheme = getThemeById(selectedThemeId);
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => giftsApi.update(giftId, data),
+    mutationFn: (data: any) => {
+      const musicVideoId = data.musicUrl ? extractYouTubeId(data.musicUrl) : (data.musicVideoId || '');
+      return giftsApi.update(giftId, { ...data, musicVideoId });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['gift', giftId] });
       toast.success(isAr ? 'تم حفظ التعديلات بنجاح! ✨' : 'Changes saved successfully! ✨');

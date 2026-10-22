@@ -11,6 +11,7 @@ import { giftsApi } from '../../services/api';
 import { THEMES, getThemeById } from '../../lib/themes';
 import ThemePreviewModal from '../../components/themes/ThemePreviewModal';
 import PhotoUploader, { type UploadedPhoto } from '../../components/media/PhotoUploader';
+import { extractYouTubeId } from '../../lib/youtube';
 import type { WizardFormData, Theme } from '../../types';
 
 // ── Step schemas ─────────────────────────────────────────────────────────────
@@ -329,11 +330,6 @@ export default function WizardPage() {
   });
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = methods;
-
-  const extractYouTubeId = (url: string) => {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?\s]+)/);
-    return match?.[1] ?? '';
-  };
 
   const onSubmit = async (data: WizardFormData) => {
     setSaving(true);

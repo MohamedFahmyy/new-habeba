@@ -2,11 +2,12 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Music, Play, Pause, Sparkles, ChevronDown, Camera, Video, Infinity as InfinityIcon } from 'lucide-react';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { giftsApi } from '../services/api';
 import type { Gift } from '../types';
 import { getThemeById, getDemoGiftBySlug, THEMES } from '../lib/themes';
+import { extractYouTubeId, getYouTubeEmbedUrl } from '../lib/youtube';
 
 function FloatingHeartsBackground({ icon = '❤️' }: { icon?: string }) {
   // Generate random static particles once
@@ -42,39 +43,49 @@ function FloatingHeartsBackground({ icon = '❤️' }: { icon?: string }) {
   );
 }
 
-function OurSongPillPlayer({ videoId, title, themePrimary }: { videoId: string; title?: string; themePrimary: string }) {
-  const [playing, setPlaying] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+function OurSongPillPlayer({
+  videoId,
+  musicUrl,
+  title,
+  themePrimary,
+  playing,
+  onTogglePlay,
+}: {
+  videoId?: string;
+  musicUrl?: string;
+  title?: string;
+  themePrimary: string;
+  playing: boolean;
+  onTogglePlay: () => void;
+}) {
+  const cleanId = extractYouTubeId(videoId) || extractYouTubeId(musicUrl);
+  if (!cleanId) return null;
 
   return (
     <div className="fixed top-5 end-5 z-50">
       <button
-        onClick={() => setPlaying(!playing)}
+        type="button"
+        onClick={onTogglePlay}
         className="px-4 py-2 rounded-full glass-card flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-white/90 hover:text-white backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 group"
         style={{
           boxShadow: `0 4px 20px -2px ${themePrimary}40`,
         }}
-        title="تشغيل / إيقاف الأغنية"
+        title={playing ? 'إيقاف مؤقت / Pause' : 'تشغيل الأغنية / Play'}
       >
-        <span className="text-base group-hover:scale-110 transition-transform">♫</span>
-        <span>Our Song</span>
+        <span className={`text-base transition-transform ${playing ? 'animate-pulse text-pink-400' : 'group-hover:scale-110'}`}>
+          {playing ? '💿' : '♫'}
+        </span>
+        <span className="max-w-[130px] truncate">{title || 'Our Song'}</span>
         <span
           className={`w-2.5 h-2.5 rounded-full transition-colors ${
             playing ? 'animate-ping' : 'opacity-60'
           }`}
-          style={{ backgroundColor: themePrimary }}
+          style={{ backgroundColor: playing ? '#10B981' : themePrimary }}
         />
+        <span className="text-white/70">
+          {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-white" />}
+        </span>
       </button>
-
-      {playing && (
-        <iframe
-          ref={iframeRef}
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&loop=1&playlist=${videoId}`}
-          className="sr-only w-0 h-0"
-          allow="autoplay"
-          title="romantic background music"
-        />
-      )}
     </div>
   );
 }
@@ -141,6 +152,43 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
 
   const heroBgPhoto = gift.memories?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1600&auto=format&fit=crop&q=80';
 
+  const cleanVideoId = extractYouTubeId(gift.musicVideoId) || extractYouTubeId(gift.musicUrl);
+  const [playing, setPlaying] = useState(true);
+  const [userManuallyPaused, setUserManuallyPaused] = useState(false);
+
+  // Global first-interaction unlock (click, touch, scroll, keydown)
+  useEffect(() => {
+    if (!cleanVideoId) return;
+
+    const unlockAudio = () => {
+      if (!userManuallyPaused) {
+        setPlaying(true);
+      }
+    };
+
+    window.addEventListener('click', unlockAudio, { passive: true });
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
+    window.addEventListener('scroll', unlockAudio, { passive: true, once: true });
+    window.addEventListener('keydown', unlockAudio, { passive: true });
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('scroll', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+  }, [cleanVideoId, userManuallyPaused]);
+
+  const togglePlay = () => {
+    if (playing) {
+      setUserManuallyPaused(true);
+      setPlaying(false);
+    } else {
+      setUserManuallyPaused(false);
+      setPlaying(true);
+    }
+  };
+
   return (
     <div
       className="min-h-screen text-white relative selection:bg-pink-500 selection:text-white overflow-hidden"
@@ -152,9 +200,35 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
       {/* Floating Translucent Hearts */}
       <FloatingHeartsBackground icon={theme.particleIcon || '❤️'} />
 
-      {/* Top-Right "Our Song" Player Button (exact match with reference site) */}
-      {gift.musicVideoId && (
-        <OurSongPillPlayer videoId={gift.musicVideoId} title={gift.musicTitle} themePrimary={theme.primaryColor} />
+      {/* Top-Right "Our Song" Player Button */}
+      {cleanVideoId && (
+        <OurSongPillPlayer
+          videoId={cleanVideoId}
+          title={gift.musicTitle}
+          themePrimary={theme.primaryColor}
+          playing={playing}
+          onTogglePlay={togglePlay}
+        />
+      )}
+
+      {/* Background YouTube Audio Player */}
+      {cleanVideoId && playing && (
+        <iframe
+          key={cleanVideoId}
+          src={getYouTubeEmbedUrl(cleanVideoId)}
+          style={{
+            position: 'fixed',
+            top: '-9999px',
+            left: '-9999px',
+            width: '240px',
+            height: '240px',
+            opacity: 0,
+            pointerEvents: 'none',
+            border: 0,
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          title="romantic background music"
+        />
       )}
 
       {/* ─── HERO SECTION ─────────────────────────────────────────────────── */}
@@ -208,12 +282,38 @@ function GiftContent({ gift, isDemo = false }: { gift: Gift; isDemo?: boolean })
             </p>
           </motion.div>
 
+          {/* Hero Action Buttons */}
+          <div className="flex gap-4 justify-center flex-wrap pt-4">
+            <a
+              href="#journey"
+              className="btn-primary py-3 px-7 shadow-xl shadow-pink-500/30 flex items-center gap-2 text-sm sm:text-base font-bold rounded-full transition-all hover:scale-105 active:scale-95"
+            >
+              <Heart className="w-4 h-4 fill-white" />
+              <span>Open Your Gift</span>
+            </a>
+
+            {cleanVideoId && (
+              <button
+                type="button"
+                onClick={togglePlay}
+                className="px-6 py-3 rounded-full glass-card flex items-center gap-2.5 text-sm sm:text-base font-semibold text-white/90 hover:text-white backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+                style={{
+                  boxShadow: `0 4px 20px -2px ${theme.primaryColor}40`,
+                }}
+              >
+                <Music className={`w-4 h-4 ${playing ? 'animate-bounce text-pink-400' : 'text-white/70'}`} />
+                <span>{playing ? (gift.musicTitle || 'Playing Our Song') : 'Play Our Song'}</span>
+                {playing ? <Pause className="w-3.5 h-3.5 text-white/70 ml-1" /> : <Play className="w-3.5 h-3.5 fill-white ml-1" />}
+              </button>
+            )}
+          </div>
+
           {/* Start Our Story Down Arrow */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="pt-8"
+            className="pt-6"
           >
             <a
               href="#journey"

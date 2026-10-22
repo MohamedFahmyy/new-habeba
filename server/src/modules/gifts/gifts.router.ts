@@ -70,6 +70,16 @@ router.get('/public/:slug', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+function extractYouTubeId(url?: string | null): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  const match = trimmed.match(
+    /(?:youtube(?:-nocookie)?\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/ ]{11})/i
+  );
+  return match ? match[1] : null;
+}
+
 // ── Create gift ───────────────────────────────────────────────────────────────
 const GiftCreateSchema = z.object({
   title: z.string().min(1).max(255),
@@ -106,8 +116,10 @@ router.post('/', requireAuth, async (req, res, next) => {
     const paymentStatus = paymentsEnabled ? 'unpaid' : 'free';
     const status = (paymentsEnabled && data.status === 'published') ? 'draft' : data.status;
 
+    const musicVideoId = data.musicVideoId || extractYouTubeId(data.musicUrl) || null;
+
     const gift = await prisma.gift.create({
-      data: { ...data, status, slug, editToken, userId: req.session.userId, paymentStatus },
+      data: { ...data, musicVideoId, status, slug, editToken, userId: req.session.userId, paymentStatus },
     });
 
     res.status(201).json({ success: true, gift });
@@ -134,6 +146,12 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       }
     }
 
+    // Auto-extract musicVideoId if musicUrl was provided
+    let musicVideoId = data.musicVideoId;
+    if (data.musicUrl !== undefined) {
+      musicVideoId = extractYouTubeId(data.musicUrl) || (data.musicUrl ? existing.musicVideoId : null);
+    }
+
     // If payments are currently disabled and gift was unpaid, auto-convert it to free
     const paymentStatusUpdate = (!paymentsEnabled && existing.paymentStatus === 'unpaid')
       ? { paymentStatus: 'free' }
@@ -141,7 +159,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 
     const gift = await prisma.gift.update({
       where: { id },
-      data: { ...data, ...paymentStatusUpdate },
+      data: { ...data, ...(musicVideoId !== undefined ? { musicVideoId } : {}), ...paymentStatusUpdate },
     });
     res.json({ success: true, gift });
   } catch (err) { next(err); }
